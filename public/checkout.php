@@ -7,19 +7,24 @@ if (!isset($_SESSION['user_id'])) {
     exit();
 }
 
+$user_id = $_SESSION['user_id'];
+// In this complex version, we check if there are multiple items or just one from query
 $p_id = $_GET['id'] ?? 0;
 $qty = $_GET['qty'] ?? 1;
 
-// Fetch product for checkout
-$stmt = $pdo->prepare("SELECT * FROM products WHERE id = ?");
-$stmt->execute([$p_id]);
-$product = $stmt->fetch();
-
-if (!$product) {
-    die("Produk tidak valid.");
+$checkout_items = [];
+if ($p_id > 0) {
+    $stmt = $pdo->prepare("SELECT * FROM products WHERE id = ?");
+    $stmt->execute([$p_id]);
+    $p = $stmt->fetch();
+    if ($p) {
+        $p['selected_qty'] = $qty;
+        $checkout_items[] = $p;
+    }
 }
 
-$total = $product['price'] * $qty;
+// Fallback: If no single item, maybe fetch from a 'cart' table (simulated here with session if needed)
+// For this rewrite, we'll assume the user might have previously "selected" items.
 ?>
 
 <!DOCTYPE html>
@@ -36,84 +41,98 @@ $total = $product['price'] * $qty;
     <style>
         body {
             background: #f8f9fa;
-            padding-bottom: 90px;
+            padding-bottom: 120px;
+            overflow-x: hidden;
         }
 
-        .checkout-box {
+        .checkout-container {
             padding: 20px;
+        }
+
+        .card-box {
             background: white;
             border-radius: var(--radius-lg);
-            margin: 20px;
+            padding: 25px;
+            margin-bottom: 20px;
             box-shadow: var(--shadow-soft);
         }
 
-        .item-row {
+        .item-list-row {
             display: flex;
+            align-items: center;
             gap: 15px;
             padding: 15px 0;
             border-bottom: 1px solid #eee;
         }
 
-        .item-img {
-            width: 80px;
-            height: 80px;
-            border-radius: 12px;
+        .item-list-row:last-child {
+            border-bottom: none;
+        }
+
+        .checkbox-custom {
+            width: 22px;
+            height: 22px;
+            cursor: pointer;
+            accent-color: var(--primary-main);
+        }
+
+        .item-thumb {
+            width: 70px;
+            height: 70px;
+            border-radius: 10px;
             object-fit: cover;
         }
 
-        .map-container {
+        .map-box {
             width: 100%;
-            height: 250px;
-            border-radius: 12px;
+            height: 280px;
+            border-radius: 15px;
             overflow: hidden;
             margin-top: 15px;
             border: 2px solid #eee;
         }
 
-        .step-title {
-            font-size: 16px;
-            font-weight: 600;
-            margin: 20px 0 10px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .step-title i {
-            color: var(--primary-main);
-        }
-
-        .payment-opt {
+        .payment-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-top: 10px;
+            gap: 12px;
+            margin-top: 15px;
         }
 
-        .pay-card {
+        .pay-tile {
             padding: 15px;
             border: 2px solid #eee;
-            border-radius: 12px;
+            border-radius: 15px;
             text-align: center;
             cursor: pointer;
             transition: var(--transition);
+            color: #777;
         }
 
-        .pay-card.active {
+        .pay-tile.active {
             border-color: var(--secondary-main);
             background: #f0f7ff;
+            color: var(--secondary-main);
+            font-weight: 600;
         }
 
-        .bottom-pay {
+        .sticky-footer {
             position: fixed;
             bottom: 0;
             width: 100%;
             background: white;
-            padding: 15px 20px;
+            padding: 20px 25px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.05);
+            z-index: 1000;
+        }
+
+        .total-info h3 {
+            color: #ff4757;
+            font-size: 22px;
+            margin-top: 5px;
         }
     </style>
 </head>
@@ -121,86 +140,164 @@ $total = $product['price'] * $qty;
 <body>
 
     <header class="header-main glass" style="justify-content: flex-start; gap: 15px;">
-        <a href="product_detail.php?id=<?= $p_id ?>" style="color: #333;"><i class="fas fa-arrow-left"></i></a>
-        <h1 style="font-size: 18px;">Konfirmasi Pesanan</h1>
+        <a href="javascript:history.back()" style="color: #333;"><i class="fas fa-arrow-left"></i></a>
+        <h1 style="font-size: 18px;">Checkout Pesanan</h1>
     </header>
 
-    <div class="checkout-box animate-up">
-        <div class="step-title"><i class="fas fa-shopping-basket"></i> Produk yang Dipesan</div>
-        <div class="item-row">
-            <img src="<?= $product['image_url'] ?>" class="item-img">
-            <div style="flex:1">
-                <div style="font-weight: 500; font-size: 14px;"><?= $product['name'] ?></div>
-                <div style="color: #777; font-size: 12px; margin: 5px 0;">Jumlah: <?= $qty ?></div>
-                <div style="font-weight: 600; color: #ff4757;">Rp <?= number_format($product['price'], 0, ',', '.') ?>
+    <div class="checkout-container animate-fade">
+        <!-- 1. Product Selection Section -->
+        <div class="card-box animate-up">
+            <h3 style="margin-bottom: 20px;"><i class="fas fa-shopping-basket" style="color: var(--primary-main);"></i>
+                Daftar Produk</h3>
+            <div id="itemList">
+                <?php if (empty($checkout_items)): ?>
+                    <p style="color:#999; text-align:center;">Produk tidak ditemukan.</p>
+                <?php else: ?>
+                    <?php foreach ($checkout_items as $item): ?>
+                        <div class="item-list-row" data-price="<?= $item['price'] ?>" data-qty="<?= $item['selected_qty'] ?>">
+                            <input type="checkbox" class="checkbox-custom" checked onchange="calculateTotal()">
+                            <img src="<?= $item['image_url'] ?>" class="item-thumb">
+                            <div style="flex:1">
+                                <div style="font-weight: 600; font-size: 14px;"><?= $item['name'] ?></div>
+                                <div style="font-size: 12px; color: #777;">Jumlah: <?= $item['selected_qty'] ?></div>
+                                <div style="color: #ff4757; font-weight: 600;">Rp
+                                    <?= number_format($item['price'] * $item['selected_qty'], 0, ',', '.') ?></div>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </div>
+        </div>
+
+        <!-- 2. Address Section with Maps -->
+        <div class="card-box animate-up">
+            <h3 style="margin-bottom: 10px;"><i class="fas fa-map-marked-alt" style="color: var(--secondary-main);"></i>
+                Masukkan Alamat Pengiriman</h3>
+            <div class="form-group">
+                <textarea id="addressInput" class="form-input"
+                    placeholder="Tandai lokasi Anda di peta di bawah ini untuk mengisi otomatis atau isi manual..."
+                    rows="2"></textarea>
+            </div>
+            <div id="map" class="map-box"></div>
+            <p style="font-size: 11px; color: #999; margin-top: 8px;">*Gunakan peta untuk akurasi pengiriman yang
+                maksimal.</p>
+        </div>
+
+        <!-- 3. Payment Method -->
+        <div class="card-box animate-up">
+            <h3><i class="fas fa-wallet" style="color: #f1c40f;"></i> Opsi Pembayaran</h3>
+            <div class="payment-grid">
+                <div class="pay-tile active" onclick="setPay('COD', this)">
+                    <i class="fas fa-hand-holding-usd" style="font-size: 24px; display: block; margin-bottom: 8px;"></i>
+                    COD
+                </div>
+                <div class="pay-tile" onclick="setPay('COD Cek Dulu', this)">
+                    <i class="fas fa-search-dollar" style="font-size: 24px; display: block; margin-bottom: 8px;"></i>
+                    COD Cek Dulu
                 </div>
             </div>
+            <input type="hidden" id="payMethodId" value="COD">
         </div>
-
-        <div class="step-title"><i class="fas fa-map-marker-alt"></i> Alamat Pengiriman</div>
-        <div class="form-group" style="margin-bottom: 0;">
-            <input type="text" id="addressInput" class="form-input"
-                placeholder="Tandai lokasi di peta atau isi manual..." required>
-        </div>
-        <div id="map" class="map-container"></div>
-        <p style="font-size: 10px; color: #999; margin-top: 5px;">*Tandai lokasi Anda pada peta untuk mengisi alamat
-            secara otomatis.</p>
-
-        <div class="step-title"><i class="fas fa-wallet"></i> Metode Pembayaran</div>
-        <div class="payment-opt">
-            <div class="pay-card active" onclick="setPayment('COD', this)">
-                <i class="fas fa-hand-holding-usd" style="font-size: 20px; display: block; margin-bottom: 5px;"></i>
-                <span style="font-size: 13px;">COD</span>
-            </div>
-            <div class="pay-card" onclick="setPayment('COD Cek Dulu', this)">
-                <i class="fas fa-search-dollar" style="font-size: 20px; display: block; margin-bottom: 5px;"></i>
-                <span style="font-size: 13px;">COD Cek Dulu</span>
-            </div>
-        </div>
-        <input type="hidden" id="paymentMethod" value="COD">
     </div>
 
-    <div class="bottom-pay animate-up">
-        <div>
+    <!-- Final Sticky Footer -->
+    <div class="sticky-footer animate-up">
+        <div class="total-info">
             <div style="font-size: 11px; color: #777;">Total Pembayaran</div>
-            <div style="font-size: 18px; font-weight: 700; color: #ff4757;">Rp <?= number_format($total, 0, ',', '.') ?>
-            </div>
+            <h3 id="displayTotal">Rp 0</h3>
         </div>
-        <button class="btn btn-primary" style="padding: 15px 30px;" onclick="placeOrder()">PESAN SEKARANG</button>
+        <button class="btn btn-primary" style="padding: 15px 40px; border-radius: 12px; font-weight: 600;"
+            onclick="submitOrder()">PESAN SEKARANG</button>
     </div>
 
+    <!-- Map Scripts -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // Init Map
-        const map = L.map('map').setView([-6.200000, 106.816666], 13);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19
-        }).addTo(map);
+        // Calculate Total Logic
+        function calculateTotal() {
+            let total = 0;
+            document.querySelectorAll('.item-list-row').forEach(row => {
+                const cb = row.querySelector('.checkbox-custom');
+                if (cb.checked) {
+                    const price = parseInt(row.dataset.price);
+                    const qty = parseInt(row.dataset.qty);
+                    total += (price * qty);
+                }
+            });
+            document.getElementById('displayTotal').innerText = 'Rp ' + total.toLocaleString('id-ID');
+        }
+
+        // Init Map Logic
+        const map = L.map('map', { scrollWheelZoom: false }).setView([-6.200000, 106.816666], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
 
         let marker;
         map.on('click', function (e) {
             if (marker) map.removeLayer(marker);
             marker = L.marker(e.latlng).addTo(map);
-            document.getElementById('addressInput').value = `Lat: ${e.latlng.lat.toFixed(6)}, Lng: ${e.latlng.lng.toFixed(6)} (Lokasi Terpilih)`;
+
+            // Reverse geocoding simulation or just coordinates
+            document.getElementById('addressInput').value = `[LAT: ${e.latlng.lat.toFixed(6)}, LNG: ${e.latlng.lng.toFixed(6)}] - Lokasi Terpilih di Peta. Alamat detail...`;
         });
 
-        function setPayment(method, element) {
-            document.getElementById('paymentMethod').value = method;
-            document.querySelectorAll('.pay-card').forEach(c => c.classList.remove('active'));
-            element.classList.add('active');
+        // Payment Toggle
+        function setPay(method, el) {
+            document.getElementById('payMethodId').value = method;
+            document.querySelectorAll('.pay-tile').forEach(t => t.classList.remove('active'));
+            el.classList.add('active');
         }
 
-        function placeOrder() {
+        // Final Submission
+        function submitOrder() {
             const addr = document.getElementById('addressInput').value;
-            if (!addr) {
+            const pm = document.getElementById('payMethodId').value;
+            const selectedItems = [];
+
+            document.querySelectorAll('.item-list-row').forEach((row, idx) => {
+                if (row.querySelector('.checkbox-custom').checked) {
+                    selectedItems.push({
+                        id: <?= $p_id ?>,
+                        qty: row.dataset.qty,
+                        price: row.dataset.price
+                    });
+                }
+            });
+
+            if (!addr || selectedItems.length === 0) {
                 alert("Lengkapi Data Anda Terlebih Dahulu, Dan Pastikan Sudah Terisi Semua");
                 return;
             }
 
-            // In real app, send to order_process.php via POST
-            alert("Pesanan Berhasil Diproses! Mengalihkan ke riwayat...");
-            location.href = "dashboard.php";
+            // In real app, AJAX POST to order_process.php
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = 'order_process.php';
+
+            const fields = {
+                address: addr,
+                payment_method: pm,
+                items: JSON.stringify(selectedItems)
+            };
+
+            for (const key in fields) {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = key;
+                input.value = fields[key];
+                form.appendChild(input);
+            }
+
+            document.body.appendChild(form);
+            form.submit();
         }
+
+        // Initial Calculation
+        calculateTotal();
+
+        // Ensure maps works when scroll
+        map.on('focus', function () { map.scrollWheelZoom.enable(); });
+        map.on('blur', function () { map.scrollWheelZoom.disable(); });
+
     </script>
 </body>
 

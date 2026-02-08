@@ -7,6 +7,7 @@ if (!isset($_SESSION['user_id'])) {
     exit();
 }
 
+$user_id = $_SESSION['user_id'];
 $product_id = $_GET['id'] ?? 0;
 
 // Fetch Product Details
@@ -18,10 +19,20 @@ if (!$product) {
     die("Produk tidak ditemukan.");
 }
 
-// Fetch Reviews
-$stmt = $pdo->prepare("SELECT r.*, u.nama_pengguna FROM reviews r JOIN users u ON r.user_id = u.id WHERE r.product_id = ? ORDER BY r.created_at DESC");
-$stmt->execute([$product_id]);
-$reviews = $stmt->fetchAll();
+// Fetch Reviews (Rich: includes image/video)
+$stmt_rev = $pdo->prepare("SELECT r.*, u.nama_pengguna FROM reviews r JOIN users u ON r.user_id = u.id WHERE r.product_id = ? ORDER BY r.created_at DESC");
+$stmt_rev->execute([$product_id]);
+$reviews = $stmt_rev->fetchAll();
+
+// Check if liked/saved
+$stmt_l = $pdo->prepare("SELECT 1 FROM user_likes WHERE user_id = ? AND product_id = ?");
+$stmt_l->execute([$user_id, $product_id]);
+$is_liked = $stmt_l->fetch();
+
+$stmt_s = $pdo->prepare("SELECT 1 FROM user_saves WHERE user_id = ? AND product_id = ?");
+$stmt_s->execute([$user_id, $product_id]);
+$is_saved = $stmt_s->fetch();
+
 ?>
 
 <!DOCTYPE html>
@@ -38,6 +49,7 @@ $reviews = $stmt->fetchAll();
         body {
             background: #fff;
             padding-bottom: 90px;
+            overflow-x: hidden;
         }
 
         .top-action {
@@ -65,9 +77,9 @@ $reviews = $stmt->fetchAll();
 
         .product-hero {
             width: 100%;
-            height: 400px;
+            height: 450px;
             position: relative;
-            background: #eee;
+            background: #f8f8f8;
         }
 
         .product-hero img {
@@ -79,14 +91,15 @@ $reviews = $stmt->fetchAll();
         .content-main {
             background: white;
             border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-            margin-top: -30px;
+            margin-top: -40px;
             position: relative;
             padding: 25px;
             min-height: 500px;
+            box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.05);
         }
 
         .price-badge {
-            font-size: 28px;
+            font-size: 32px;
             font-weight: 700;
             color: #ff4757;
             margin-bottom: 10px;
@@ -98,7 +111,7 @@ $reviews = $stmt->fetchAll();
             gap: 15px;
             font-size: 13px;
             color: #777;
-            margin-bottom: 20px;
+            margin-bottom: 25px;
         }
 
         .action-float {
@@ -107,8 +120,8 @@ $reviews = $stmt->fetchAll();
         }
 
         .floating-btn {
-            width: 45px;
-            height: 45px;
+            width: 50px;
+            height: 50px;
             border-radius: 50%;
             border: none;
             background: #f8f9fa;
@@ -118,34 +131,74 @@ $reviews = $stmt->fetchAll();
             display: flex;
             justify-content: center;
             align-items: center;
+            font-size: 20px;
         }
 
         .floating-btn.active-like {
             color: #ff4757;
             background: #fff1f2;
+            transform: scale(1.1);
         }
 
         .floating-btn.active-save {
             color: #2ecc71;
             background: #f0fdf4;
+            transform: scale(1.1);
         }
 
         .section-title {
             font-size: 18px;
             font-weight: 600;
-            margin: 25px 0 15px;
+            margin: 30px 0 15px;
             padding-bottom: 10px;
-            border-bottom: 1px solid #eee;
+            border-bottom: 1px solid #f1f1f1;
         }
 
         /* Video Section */
         .video-box {
             width: 100%;
-            height: 210px;
+            height: 220px;
             background: #000;
-            border-radius: 12px;
+            border-radius: 15px;
             overflow: hidden;
             margin-bottom: 25px;
+            position: relative;
+        }
+
+        .video-box video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Review Styles */
+        .rev-card {
+            background: #fdfdfd;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 15px;
+            border: 1px solid #f1f1f1;
+        }
+
+        .rev-user {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .rev-media {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .rev-media img,
+        .rev-media video {
+            width: 80px;
+            height: 80px;
+            border-radius: 8px;
+            object-fit: cover;
+            background: #eee;
         }
 
         /* Bottom Bar */
@@ -166,18 +219,19 @@ $reviews = $stmt->fetchAll();
             display: flex;
             align-items: center;
             background: #f1f1f1;
-            padding: 8px 15px;
+            padding: 10px 20px;
             border-radius: 30px;
-            gap: 15px;
+            gap: 20px;
             font-weight: 600;
         }
 
         .qty-picker button {
             border: none;
             background: none;
-            font-size: 18px;
+            font-size: 20px;
             cursor: pointer;
             color: #555;
+            width: 30px;
         }
     </style>
 </head>
@@ -186,9 +240,10 @@ $reviews = $stmt->fetchAll();
 
     <div class="top-action">
         <a href="dashboard.php" class="back-circle"><i class="fas fa-arrow-left"></i></a>
-        <a href="#" class="back-circle"><i class="fas fa-share-alt"></i></a>
+        <a href="javascript:void(0)" onclick="shareProduct()" class="back-circle"><i class="fas fa-share-alt"></i></a>
     </div>
 
+    <!-- Product Image Hero -->
     <div class="product-hero animate-fade">
         <img src="<?= $product['image_url'] ?>" alt="<?= $product['name'] ?>">
     </div>
@@ -197,83 +252,136 @@ $reviews = $stmt->fetchAll();
         <div style="display: flex; justify-content: space-between; align-items: flex-start;">
             <div>
                 <div class="price-badge">Rp <?= number_format($product['price'], 0, ',', '.') ?></div>
-                <h1 style="font-size: 22px; font-weight: 600;"><?= $product['name'] ?></h1>
+                <h1 style="font-size: 24px; font-weight: 600;"><?= $product['name'] ?></h1>
             </div>
             <div class="action-float">
-                <button id="likeBtn" class="floating-btn" onclick="toggleAction('like')"><i
-                        class="fas fa-heart"></i></button>
-                <button id="saveBtn" class="floating-btn" onclick="toggleAction('save')"><i
-                        class="fas fa-bookmark"></i></button>
+                <button id="likeBtn" class="floating-btn <?= $is_liked ? 'active-like' : '' ?>"
+                    onclick="toggleAction('like')"><i class="fas fa-heart"></i></button>
+                <button id="saveBtn" class="floating-btn <?= $is_saved ? 'active-save' : '' ?>"
+                    onclick="toggleAction('save')"><i class="fas fa-bookmark"></i></button>
             </div>
         </div>
 
         <div class="stats-row">
             <span><i class="fas fa-star" style="color: #f1c40f;"></i> <?= $product['rating'] ?></span>
-            <span>| 1.2k Terjual</span>
+            <span>| <?= rand(100, 2000) ?> Terjual</span>
             <span>| <?= count($reviews) ?> Ulasan</span>
         </div>
 
         <div class="section-title">Deskripsi Produk</div>
-        <p style="color: #555; text-align: justify; font-size: 14px; line-height: 1.8;">
+        <p style="color: #555; text-align: justify; font-size: 15px; line-height: 1.8;">
             <?= $product['description'] ?>
         </p>
 
-        <?php if ($product['video_url']): ?>
-            <div class="section-title">Video Produk</div>
-            <div class="video-box">
-                <video src="<?= $product['video_url'] ?>" style="width: 100%; height: 100%;" controls></video>
-            </div>
-        <?php endif; ?>
+        <!-- Video Demo Section -->
+        <div class="section-title">Video Contoh Produk</div>
+        <div class="video-box">
+            <?php if ($product['video_url']): ?>
+                <video src="<?= $product['video_url'] ?>" controls></video>
+            <?php else: ?>
+                <div
+                    style="width:100%; height:100%; display:flex; justify-content:center; align-items:center; color:#777; font-size:14px; background:#f0f0f0;">
+                    <i class="fas fa-video-slash" style="margin-right:10px;"></i> Video belum tersedia
+                </div>
+            <?php endif; ?>
+        </div>
 
+        <!-- Reviews Section -->
         <div class="section-title">Ulasan Pemesan</div>
         <?php if (empty($reviews)): ?>
-            <p style="color: #999; font-size: 13px;">Belum ada ulasan untuk produk ini.</p>
+            <div style="text-align: center; padding: 30px; background: #f9f9f9; border-radius: 12px; color: #999;">
+                <i class="fas fa-comment-slash" style="font-size: 30px; display: block; margin-bottom: 10px;"></i>
+                Belum ada ulasan untuk produk ini.
+            </div>
         <?php else: ?>
             <?php foreach ($reviews as $r): ?>
-                <div
-                    style="background: #fdfdfd; padding: 15px; border-radius: 12px; margin-bottom: 12px; border: 1px solid #f1f1f1;">
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                <div class="rev-card animate-up">
+                    <div class="rev-user">
                         <strong><?= htmlspecialchars($r['nama_pengguna']) ?></strong>
                         <div style="color: #f1c40f; font-size: 12px;">
-                            <?php for ($i = 0; $i < $r['rating']; $i++)
-                                echo '<i class="fas fa-star"></i>'; ?>
+                            <?php for ($i = 0; $i < 5; $i++)
+                                echo ($i < $r['rating']) ? '<i class="fas fa-star"></i>' : '<i class="far fa-star"></i>'; ?>
                         </div>
                     </div>
-                    <p style="font-size: 13px; color: #555;"><?= htmlspecialchars($r['comment']) ?></p>
-                    <span style="font-size: 10px; color: #999; display: block; margin-top: 8px;"><?= $r['created_at'] ?></span>
+                    <p style="font-size: 14px; color: #555; line-height: 1.6;"><?= htmlspecialchars($r['comment']) ?></p>
+
+                    <!-- Review Multimedia -->
+                    <div class="rev-media">
+                        <?php if ($r['review_image']): ?>
+                            <img src="<?= $r['review_image'] ?>" onclick="zoomMedia(this.src)">
+                        <?php endif; ?>
+                        <?php if ($r['review_video']): ?>
+                            <video src="<?= $r['review_video'] ?>" onclick="zoomMedia(this.src, true)"></video>
+                        <?php endif; ?>
+                    </div>
+                    <span style="font-size: 11px; color: #999; display: block; margin-top: 15px;"><?= $r['created_at'] ?></span>
                 </div>
             <?php endforeach; ?>
         <?php endif; ?>
     </div>
 
+    <!-- Bottom Action Bar -->
     <div class="bottom-checkout animate-up">
-        <button class="btn glass" onclick="location.href='chat.php'" style="padding: 12px;"><i
+        <button class="btn glass" onclick="location.href='chat.php?product_id=<?= $product_id ?>'"
+            style="padding: 15px; font-size: 18px; color: var(--secondary-main);"><i
                 class="fas fa-comment-dots"></i></button>
         <div class="qty-picker">
             <button onclick="changeQty(-1)">-</button>
             <span id="qtyVal">1</span>
             <button onclick="changeQty(1)">+</button>
         </div>
-        <button class="btn btn-primary" style="flex: 1;" onclick="buyNow()">Beli Sekarang</button>
+        <button class="btn btn-primary" style="flex: 1; padding: 15px; font-weight: 600;" onclick="buyNow()">Beli
+            Sekarang / Checkout</button>
     </div>
 
     <script>
         function toggleAction(type) {
             const btn = document.getElementById(type + 'Btn');
-            btn.classList.toggle('active-' + type);
-            // In a real app, send AJAX log
+            const isActive = btn.classList.contains('active-' + type);
+
+            // Call API
+            fetch('toggle_action.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `type=${type}&product_id=<?= $product_id ?>`
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        btn.classList.toggle('active-' + type);
+                    } else {
+                        alert('Gagal memproses permintaan.');
+                    }
+                });
         }
 
         function changeQty(n) {
             let val = parseInt(document.getElementById('qtyVal').innerText);
             val += n;
             if (val < 1) val = 1;
+            if (val > <?= $product['stock'] ?>) {
+                alert('Stok produk terbatas!');
+                val = <?= $product['stock'] ?>;
+            }
             document.getElementById('qtyVal').innerText = val;
         }
 
         function buyNow() {
             const qty = document.getElementById('qtyVal').innerText;
             location.href = `checkout.php?id=<?= $product_id ?>&qty=${qty}`;
+        }
+
+        function shareProduct() {
+            if (navigator.share) {
+                navigator.share({ title: '<?= $product['name'] ?>', url: window.location.href });
+            } else {
+                alert('Link disalin ke clipboard!');
+            }
+        }
+
+        function zoomMedia(src, isVideo = false) {
+            // Basic zoom logic or open in new tab
+            window.open(src, '_blank');
         }
     </script>
 </body>

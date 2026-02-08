@@ -10,12 +10,42 @@ if (!isset($_SESSION['user_id'])) {
 $user_id = $_SESSION['user_id'];
 $user_nama = $_SESSION['user_nama'] ?? 'User';
 
-// Fetch Products from Database
-$stmt = $pdo->query("SELECT * FROM products ORDER BY created_at DESC");
+// 1. Fetch Products for Beranda (Limited to 510 to show volume)
+$stmt = $pdo->query("SELECT * FROM products ORDER BY created_at DESC LIMIT 510");
 $products = $stmt->fetchAll();
 
-// Simulated notifications count
-$notif_count = 3;
+// 2. Fetch Orders for Histories
+$stmt_orders = $pdo->prepare("SELECT * FROM orders WHERE user_id = ? ORDER BY created_at DESC");
+$stmt_orders->execute([$user_id]);
+$orders = $stmt_orders->fetchAll();
+
+// 3. Fetch Notifications
+$stmt_notif = $pdo->prepare("SELECT * FROM notifications WHERE (user_id = ? OR user_id IS NULL) ORDER BY created_at DESC");
+$stmt_notif->execute([$user_id]);
+$notifications = $stmt_notif->fetchAll();
+
+// 4. Fetch Profile Lists (Likes, Saves, etc)
+$stmt_likes = $pdo->prepare("SELECT p.* FROM products p JOIN user_likes l ON p.id = l.product_id WHERE l.user_id = ?");
+$stmt_likes->execute([$user_id]);
+$liked_products = $stmt_likes->fetchAll();
+
+$stmt_saves = $pdo->prepare("SELECT p.* FROM products p JOIN user_saves s ON p.id = s.product_id WHERE s.user_id = ?");
+$stmt_saves->execute([$user_id]);
+$saved_products = $stmt_saves->fetchAll();
+
+// Categorized Orders for Profile
+$stmt_unpaid = $pdo->prepare("SELECT * FROM orders WHERE user_id = ? AND status = 'Belum Dibayar'");
+$stmt_unpaid->execute([$user_id]);
+$unpaid_list = $stmt_unpaid->fetchAll();
+
+$stmt_packing = $pdo->prepare("SELECT * FROM orders WHERE user_id = ? AND status = 'Dikemas'");
+$stmt_packing->execute([$user_id]);
+$packing_list = $stmt_packing->fetchAll();
+
+$stmt_shipping = $pdo->prepare("SELECT * FROM orders WHERE user_id = ? AND status = 'Dikirim'");
+$stmt_shipping->execute([$user_id]);
+$shipping_list = $stmt_shipping->fetchAll();
+
 ?>
 
 <!DOCTYPE html>
@@ -32,6 +62,7 @@ $notif_count = 3;
         body {
             padding-bottom: 80px;
             background: #fdfdfd;
+            overflow-x: hidden;
         }
 
         .header-main {
@@ -188,6 +219,47 @@ $notif_count = 3;
         .dashboard-section.active {
             display: block;
         }
+
+        /* Profile Sub-sections */
+        .profile-list-item {
+            background: white;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            display: flex;
+            gap: 15px;
+            box-shadow: var(--shadow-soft);
+            align-items: center;
+        }
+
+        .profile-list-item img {
+            width: 60px;
+            height: 60px;
+            border-radius: 8px;
+            object-fit: cover;
+        }
+
+        .status-pill {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        .status-unpaid {
+            background: #fff5f5;
+            color: #ff4757;
+        }
+
+        .status-packing {
+            background: #fff8e1;
+            color: #ffa000;
+        }
+
+        .status-shipping {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
     </style>
 </head>
 
@@ -198,9 +270,9 @@ $notif_count = 3;
         <div class="logo" style="font-weight: 600; font-size: 18px; color: var(--primary-main);">LuxuryShope</div>
         <div class="search-inner">
             <i class="fas fa-search" style="color: #999;"></i>
-            <input type="text" placeholder="Cari di Luxury Shope...">
+            <input type="text" placeholder="Cari 500+ produk mewah...">
         </div>
-        <div class="cart-icon" style="position: relative;">
+        <div class="cart-icon" style="position: relative; cursor: pointer;" onclick="location.href='checkout.php'">
             <i class="fas fa-shopping-cart" style="font-size: 20px; color: #555;"></i>
             <span
                 style="position: absolute; top: -10px; right: -10px; background: #ff4757; color: white; width: 18px; height: 18px; border-radius: 50%; font-size: 10px; display: flex; align-items: center; justify-content: center;">2</span>
@@ -211,47 +283,66 @@ $notif_count = 3;
     <div id="beranda" class="dashboard-section active animate-fade">
         <div class="banner" style="padding: 20px;">
             <div
-                style="width: 100%; height: 150px; background: linear-gradient(to right, var(--primary-main), var(--secondary-main)); border-radius: var(--radius-md); padding: 25px; color: var(--text-dark);">
-                <h2 style="font-size: 20px;">Promo Gajian!</h2>
-                <p style="font-size: 14px; opacity: 0.8;">Diskon hingga 50% untuk produk premium.</p>
-                <button class="btn" style="background: white; margin-top: 15px; font-size: 12px;">Cek Sekarang</button>
+                style="width: 100%; height: 150px; background: linear-gradient(to right, var(--primary-main), var(--secondary-main)); border-radius: var(--radius-lg); padding: 25px; color: var(--text-dark); position: relative; overflow: hidden;">
+                <h2 style="font-size: 22px; z-index: 1; position: relative;">Premium Collection 2026</h2>
+                <p style="font-size: 14px; opacity: 0.8; z-index: 1; position: relative;">Eksplorasi 500+ barang mewah
+                    terbaik.</p>
+                <button class="btn"
+                    style="background: white; margin-top: 15px; font-size: 12px; z-index: 1; position: relative;">Lihat
+                    Katalog</button>
+                <i class="fas fa-shopping-bag"
+                    style="position: absolute; right: -20px; bottom: -20px; font-size: 150px; color: rgba(255,255,255,0.2);"></i>
             </div>
         </div>
 
         <div class="product-container">
-            <?php if (empty($products)): ?>
-                <p style="grid-column: 1/-1; text-align: center; color: #999; padding: 40px;">Belum ada produk yang
-                    tersedia.</p>
-            <?php else: ?>
-                <?php foreach ($products as $p): ?>
-                    <a href="product_detail.php?id=<?= $p['id'] ?>" class="p-card">
-                        <div class="p-img-box">
-                            <img src="<?= $p['image_url'] ?>" alt="<?= $p['name'] ?>">
-                            <?php if ($p['discount_percent'] > 0): ?>
-                                <span class="discount-tag"><?= $p['discount_percent'] ?>% OFF</span>
-                            <?php endif; ?>
+            <?php foreach ($products as $p): ?>
+                <a href="product_detail.php?id=<?= $p['id'] ?>" class="p-card">
+                    <div class="p-img-box">
+                        <img src="<?= $p['image_url'] ?>" alt="<?= $p['name'] ?>">
+                        <?php if ($p['discount_percent'] > 0): ?>
+                            <span class="discount-tag"><?= $p['discount_percent'] ?>% OFF</span>
+                        <?php endif; ?>
+                    </div>
+                    <div class="p-info">
+                        <div class="p-name"><?= $p['name'] ?></div>
+                        <div class="p-price">Rp <?= number_format($p['price'], 0, ',', '.') ?></div>
+                        <div class="p-rating">
+                            <i class="fas fa-star" style="color: #f1c40f;"></i>
+                            <span><?= $p['rating'] ?> | Terjual <?= rand(10, 500) ?>+</span>
                         </div>
-                        <div class="p-info">
-                            <div class="p-name"><?= $p['name'] ?></div>
-                            <div class="p-price">Rp <?= number_format($p['price'], 0, ',', '.') ?></div>
-                            <div class="p-rating">
-                                <i class="fas fa-star" style="color: #f1c40f;"></i>
-                                <span><?= $p['rating'] ?> | Terjual 100+</span>
-                            </div>
-                        </div>
-                    </a>
-                <?php endforeach; ?>
-            <?php endif; ?>
+                    </div>
+                </a>
+            <?php endforeach; ?>
         </div>
     </div>
 
-    <!-- SECTION: RIWAYAT -->
+    <!-- SECTION: HISTORIES -->
     <div id="riwayat" class="dashboard-section animate-fade">
         <div style="padding: 20px;">
             <h2>Histories Pemesanan</h2>
-            <div style="margin-top: 20px; color: #999; text-align: center; padding: 50px;">
-                <i class="fas fa-box-open" style="font-size: 50px; margin-bottom: 15px;"></i>
-                <p>Belum ada riwayat pesanan.</p>
+            <div style="margin-top: 20px;">
+                <?php if (empty($orders)): ?>
+                    <div style="text-align: center; padding: 50px; color: #999;">
+                        <i class="fas fa-box-open" style="font-size: 50px; display: block; margin-bottom: 10px;"></i>
+                        Belum ada riwayat pesanan.
+                    </div>
+                <?php else: ?>
+                    <?php foreach ($orders as $o): ?>
+                        <div class="profile-list-item">
+                            <i class="fas fa-receipt" style="font-size: 30px; color: var(--secondary-main);"></i>
+                            <div style="flex:1">
+                                <div style="font-weight: 600;">Pesanan #<?= $o['id'] ?></div>
+                                <div style="font-size: 12px; color: #777;">Total: Rp
+                                    <?= number_format($o['total_price'], 0, ',', '.') ?></div>
+                                <div style="font-size: 11px; color: #999;"><?= $o['created_at'] ?></div>
+                            </div>
+                            <span class="status-pill <?= strtolower(str_replace(' ', '', 'status-' . $o['status'])) ?>">
+                                <?= $o['status'] ?>
+                            </span>
+                        </div>
+                    <?php endforeach; ?>
+                <?php endif; ?>
             </div>
         </div>
     </div>
@@ -260,13 +351,21 @@ $notif_count = 3;
     <div id="notif" class="dashboard-section animate-fade">
         <div style="padding: 20px;">
             <h2>Notifikasi</h2>
-            <div class="notif-item animate-up"
-                style="background:white; padding:15px; border-radius:12px; margin-top:15px; box-shadow: var(--shadow-soft);">
-                <strong>Promo Akhir Bulan!</strong>
-                <p style="font-size: 13px; color: #666; margin-top: 5px;">Dapatkan gratis ongkir ke seluruh Indonesia.
-                </p>
-                <span style="font-size: 10px; color: #999;">Baru saja</span>
-            </div>
+            <?php if (empty($notifications)): ?>
+                <div style="text-align: center; padding: 50px; color: #999;">Tak ada notifikasi baru.</div>
+            <?php else: ?>
+                <?php foreach ($notifications as $n): ?>
+                    <div class="profile-list-item" style="border-left: 4px solid var(--primary-main);">
+                        <div style="flex:1">
+                            <strong
+                                style="color: var(--primary-main); font-size: 12px; display: block; margin-bottom: 5px;"><?= $n['type'] ?></strong>
+                            <div style="font-weight: 600;"><?= $n['title'] ?></div>
+                            <p style="font-size: 13px; color: #555; margin-top: 5px;"><?= $n['message'] ?></p>
+                            <span style="font-size: 10px; color: #999;"><?= $n['created_at'] ?></span>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            <?php endif; ?>
         </div>
     </div>
 
@@ -275,36 +374,71 @@ $notif_count = 3;
         <div style="padding: 20px; text-align: center;">
             <div
                 style="width: 100px; height: 100px; background: #eee; border-radius: 50%; margin: 0 auto 15px; overflow: hidden; border: 4px solid var(--white); box-shadow: var(--shadow-medium);">
-                <img src="https://i.pravatar.cc/100" style="width: 100%;">
+                <img src="https://i.pravatar.cc/150?u=<?= $user_id ?>" style="width: 100%;">
             </div>
             <h3><?= htmlspecialchars($user_nama) ?></h3>
-            <p style="font-size: 13px; color: #777;">ID: #<?= $user_id ?></p>
+            <p style="font-size: 13px; color: #777;">ID: #LXS-<?= str_pad($user_id, 4, '0', STR_PAD_LEFT) ?></p>
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 30px;">
-                <div class="btn glass" style="flex-direction: column; padding: 20px;">
-                    <i class="fas fa-heart" style="color: #ff4757; font-size: 24px;"></i>
-                    <span style="font-size: 12px; margin-top: 5px; color: #555;">Suka</span>
+            <!-- Profile Summary Grid -->
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 30px;">
+                <div onclick="showSub('liked')" class="btn glass"
+                    style="flex-direction: column; padding: 15px; font-size: 11px;">
+                    <i class="fas fa-heart" style="color: #ff4757; margin-bottom: 5px;"></i>
+                    Suka (<?= count($liked_products) ?>)
                 </div>
-                <div class="btn glass" style="flex-direction: column; padding: 20px;">
-                    <i class="fas fa-bookmark" style="color: #2ecc71; font-size: 24px;"></i>
-                    <span style="font-size: 12px; margin-top: 5px; color: #555;">Simpan</span>
+                <div onclick="showSub('saved')" class="btn glass"
+                    style="flex-direction: column; padding: 15px; font-size: 11px;">
+                    <i class="fas fa-bookmark" style="color: #2ecc71; margin-bottom: 5px;"></i>
+                    Simpan (<?= count($saved_products) ?>)
+                </div>
+                <div onclick="showSub('unpaid')" class="btn glass"
+                    style="flex-direction: column; padding: 15px; font-size: 11px;">
+                    <i class="fas fa-wallet" style="color: #ffa000; margin-bottom: 5px;"></i>
+                    Belum Bayar (<?= count($unpaid_list) ?>)
                 </div>
             </div>
 
+            <!-- Tracking Grid -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
+                <div onclick="showSub('packing')" class="btn glass" style="padding: 15px; font-size: 11px; gap: 8px;">
+                    <i class="fas fa-box" style="color: #9b59b6;"></i> Dikemas (<?= count($packing_list) ?>)
+                </div>
+                <div onclick="showSub('shipping')" class="btn glass" style="padding: 15px; font-size: 11px; gap: 8px;">
+                    <i class="fas fa-truck" style="color: #3498db;"></i> Dikirim (<?= count($shipping_list) ?>)
+                </div>
+            </div>
+
+            <!-- Profile Action Options -->
             <div style="margin-top: 30px; text-align: left;">
                 <div class="btn"
-                    style="width: 100%; justify-content: space-between; background: white; margin-bottom: 10px; box-shadow: var(--shadow-soft);">
-                    <span><i class="fas fa-cog" style="margin-right: 10px;"></i> Pengaturan</span>
+                    style="width: 100%; justify-content: space-between; background: white; margin-bottom: 10px; box-shadow: var(--shadow-soft);"
+                    onclick="alert('Buka Pengaturan Akun...')">
+                    <span><i class="fas fa-cog" style="margin-right: 10px;"></i> Pengaturan Akun</span>
                     <i class="fas fa-chevron-right"></i>
                 </div>
                 <div class="btn"
-                    style="width: 100%; justify-content: space-between; background: white; margin-bottom: 10px; box-shadow: var(--shadow-soft);">
-                    <span><i class="fas fa-comment-dots" style="margin-right: 10px;"></i> Hubungi Penjual</span>
+                    style="width: 100%; justify-content: space-between; background: white; margin-bottom: 10px; box-shadow: var(--shadow-soft);"
+                    onclick="location.href='chat.php'">
+                    <span><i class="fas fa-comment-dots" style="margin-right: 10px;"></i> Chat Hubungi Penjual</span>
                     <i class="fas fa-chevron-right"></i>
                 </div>
                 <a href="logout.php" class="btn"
-                    style="width: 100%; background: #fff5f5; color: #ff4757; margin-top: 20px;">Keluar Akun</a>
+                    style="width: 100%; background: #fff5f5; color: #ff4757; margin-top: 20px;">Keluar Sistem</a>
             </div>
+        </div>
+    </div>
+
+    <!-- Profile SUB-CONTENT Modals (Simulated via Toggle) -->
+    <div id="subOverlay"
+        style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); backdrop-filter:blur(10px); display:none; z-index:2000; justify-content:center; align-items:flex-end;">
+        <div style="width:100%; max-height:80vh; background:white; border-radius:24px 24px 0 0; padding:30px; overflow-y:auto;"
+            class="animate-up">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <h3 id="subTitle">List Data</h3>
+                <button onclick="document.getElementById('subOverlay').style.display='none'" class="btn"
+                    style="padding:5px 15px;">Tutup</button>
+            </div>
+            <div id="subListContainer"></div>
         </div>
     </div>
 
@@ -316,7 +450,7 @@ $notif_count = 3;
         </a>
         <a href="javascript:void(0)" onclick="switchSection('riwayat', this)" class="nav-item">
             <i class="fas fa-history"></i>
-            <span>Riwayat</span>
+            <span>Histories</span>
         </a>
         <a href="javascript:void(0)" onclick="switchSection('notif', this)" class="nav-item">
             <div style="position: relative;">
@@ -328,20 +462,63 @@ $notif_count = 3;
         </a>
         <a href="javascript:void(0)" onclick="switchSection('profil', this)" class="nav-item">
             <i class="fas fa-user"></i>
-            <span>Profil</span>
+            <span>Profile</span>
         </a>
     </nav>
 
     <script>
         function switchSection(sectionId, element) {
-            // Hide all sections
             document.querySelectorAll('.dashboard-section').forEach(sec => sec.classList.remove('active'));
-            // Remove active from nav
             document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
-
-            // Show target
             document.getElementById(sectionId).classList.add('active');
             element.classList.add('active');
+            window.scrollTo(0, 0);
+        }
+
+        function showSub(type) {
+            const overlay = document.getElementById('subOverlay');
+            const title = document.getElementById('subTitle');
+            const container = document.getElementById('subListContainer');
+            overlay.style.display = 'flex';
+
+            let html = '';
+            if (type === 'liked') {
+                title.innerText = "Produk Disukai";
+                <?php if (empty($liked_products)): ?> html = '<p style="text-align:center; color:#999;">Belum ada produk disukai.</p>'; <?php else: ?>
+                    <?php foreach ($liked_products as $lp): ?>
+                        html += `<div class="profile-list-item"><img src="<?= $lp['image_url'] ?>"><div style="flex:1"><strong><?= $lp['name'] ?></strong><br><span style="color:#ff4757">Rp <?= number_format($lp['price'], 0, ',', '.') ?></span></div></div>`;
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            } else if (type === 'saved') {
+                title.innerText = "Produk Disimpan";
+                <?php if (empty($saved_products)): ?> html = '<p style="text-align:center; color:#999;">Belum ada produk disimpan.</p>'; <?php else: ?>
+                    <?php foreach ($saved_products as $sp): ?>
+                        html += `<div class="profile-list-item"><img src="<?= $sp['image_url'] ?>"><div style="flex:1"><strong><?= $sp['name'] ?></strong><br><span style="color:#ff4757">Rp <?= number_format($sp['price'], 0, ',', '.') ?></span></div></div>`;
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            } else if (type === 'unpaid') {
+                title.innerText = "Belum Dibayar";
+                 <?php if (empty($unpaid_list)): ?> html = '<p style="text-align:center; color:#999;">Tak ada tagihan tertunda.</p>'; <?php else: ?>
+                    <?php foreach ($unpaid_list as $ul): ?>
+                        html += `<div class="profile-list-item"><i class="fas fa-money-bill-wave" style="font-size:30px; color:#ffa000;"></i><div style="flex:1"><strong>Order #<?= $ul['id'] ?></strong><br><span>Total: Rp <?= number_format($ul['total_price'], 0, ',', '.') ?></span></div></div>`;
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            } else if (type === 'packing') {
+                title.innerText = "Sedang Dikemas";
+                 <?php if (empty($packing_list)): ?> html = '<p style="text-align:center; color:#999;">Belum ada pesanan dikemas.</p>'; <?php else: ?>
+                    <?php foreach ($packing_list as $pl): ?>
+                        html += `<div class="profile-list-item"><i class="fas fa-archive" style="font-size:30px; color:#9b59b6;"></i><div style="flex:1"><strong>Order #<?= $pl['id'] ?></strong><br><span>Status: Menyiapkan barang...</span></div></div>`;
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            } else if (type === 'shipping') {
+                title.innerText = "Dalam Pengiriman";
+                 <?php if (empty($shipping_list)): ?> html = '<p style="text-align:center; color:#999;">Belum ada pesanan dikirim.</p>'; <?php else: ?>
+                    <?php foreach ($shipping_list as $sl): ?>
+                        html += `<div class="profile-list-item"><i class="fas fa-truck-moving" style="font-size:30px; color:#3498db;"></i><div style="flex:1"><strong>Order #<?= $sl['id'] ?></strong><br><span>Resi: <?= $sl['tracking_code'] ?: 'Sedang diproses' ?></span></div><button class="btn" style="font-size:10px;" onclick="alert('Lacak posisi kurir...')">Lacak</button></div>`;
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            }
+            container.innerHTML = html;
         }
     </script>
 </body>
