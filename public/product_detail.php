@@ -274,10 +274,13 @@ $review_count = $rating_data['count'];
             <span>| <?= $review_count ?> Ulasan</span>
         </div>
 
-        <div class="section-title">Deskripsi Produk</div>
-        <p style="color: #555; text-align: justify; font-size: 15px; line-height: 1.8;">
-            <?= $product['description'] ?>
-        </p>
+        <div class="section-title">Deskripsi Produk Eksklusif</div>
+        <div
+            style="background: #fdfdfd; padding: 20px; border-radius: 15px; border: 1px solid #f8f8f8; margin-bottom: 20px;">
+            <p style="color: #444; text-align: justify; font-size: 15px; line-height: 1.8;">
+                <?= nl2br(htmlspecialchars($product['description'])) ?>
+            </p>
+        </div>
 
         <!-- Video Demo Section -->
         <div class="section-title">Video Contoh Produk</div>

@@ -15,6 +15,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 $user_id = $_SESSION['user_id'];
 $address = $_POST['address'] ?? '';
 $payment_method = $_POST['payment_method'] ?? 'COD';
+$acc_number = $_POST['acc_number'] ?? null;
 $items_json = $_POST['items'] ?? '[]';
 $items = json_decode($items_json, true);
 
@@ -32,8 +33,8 @@ try {
     }
 
     // 1. Insert Order
-    $stmt = $pdo->prepare("INSERT INTO orders (user_id, total_price, address, payment_method, status) VALUES (?, ?, ?, ?, 'Belum Dibayar')");
-    $stmt->execute([$user_id, $total_final, $address, $payment_method]);
+    $stmt = $pdo->prepare("INSERT INTO orders (user_id, total_price, address, payment_method, acc_number, status) VALUES (?, ?, ?, ?, ?, 'Belum Dibayar')");
+    $stmt->execute([$user_id, $total_final, $address, $payment_method, $acc_number]);
     $order_id = $pdo->lastInsertId();
 
     // 2. Insert Items & Update Stock

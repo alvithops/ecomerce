@@ -19,11 +19,12 @@ try {
         'Cosmetics' => 'https://images.unsplash.com/photo-1512496015851-a90fb38ba796'
     ];
 
-    // Luxury Video Sample URLs
+    // Luxury Video Sample URLs (Short/Premium)
     $videos = [
-        'https://assets.mixkit.co/videos/preview/mixkit-fashion-model-walking-on-a-bridge-34444-large.mp4',
+        'https://assets.mixkit.co/videos/preview/mixkit-fashion-model-walking-on-a-bridge-34444-large.mp4', // Loopable
         'https://assets.mixkit.co/videos/preview/mixkit-holding-a-glass-of-red-wine-at-a-party-40432-large.mp4',
-        'https://assets.mixkit.co/videos/preview/mixkit-close-up-of-a-luxury-watch-running-4482-large.mp4'
+        'https://assets.mixkit.co/videos/preview/mixkit-close-up-of-a-luxury-watch-running-4482-large.mp4',
+        'https://assets.mixkit.co/videos/preview/mixkit-model-man-wearing-luxury-watch-and-suit-40431-large.mp4'
     ];
 
     $product_count = 510;
@@ -35,19 +36,27 @@ try {
     $sql_r = "INSERT INTO reviews (user_id, product_id, rating, comment, review_image, review_video) VALUES (:uid, :pid, :rating, :comment, :img, :vid)";
     $stmt_r = $pdo->prepare($sql_r);
 
-    // Get a user ID for reviews (assuming at least user 1 exists)
+    $comments = [
+        "Kualitas produk sangat premium, sepadan dengan harganya!",
+        "Gila sih ini, pengiriman cepat dan packing sangat aman.",
+        "Awalnya ragu, pas datang ternyata barangnya ori dan mewah.",
+        "Suka banget sama desainnya, bikin pede pas dipake pesta.",
+        "Recomended seller! Chat dibalas cepat dan sangat informatif."
+    ];
+
+    // Assuming user 1 exists (after registration)
     $user_id = 1;
 
     for ($i = 1; $i <= $product_count; $i++) {
         $cat = $categories[array_rand($categories)];
-        $name = "$cat Exclusive Edition #$i";
-        $desc = "Produk unggulan dari lini $cat LUXURY. Keunggulan: Material Grade A+, Durabilitas tinggi, dan Estetika premium yang tak tertandingi.";
-        $price = rand(1000000, 50000000);
-        $disc = (rand(1, 10) > 8) ? rand(5, 40) : 0;
-        $stock = rand(0, 150);
-        $rating = rand(42, 50) / 10;
-        $img = $images[explode(' ', $cat)[1] ?? 'Fashion'] . "?sig=" . ($i + 100);
-        $vid = ($i <= 50) ? $videos[array_rand($videos)] : null; // First 50 product have videos
+        $name = "$cat Luxe Edition #$i";
+        $desc = "Produk unggulan dari koleksi $cat LUXURY 2024. Menggunakan material Grade A+ yang memberikan durabilitas tinggi serta estetika premium. Cocok untuk Anda yang mengutamakan kualitas dan gaya hidup eksklusif.";
+        $price = rand(1500000, 75000000);
+        $disc = (rand(1, 10) > 8) ? rand(10, 50) : 0;
+        $stock = rand(5, 100);
+        $rating = rand(45, 50) / 10;
+        $img = $images[explode(' ', $cat)[1] ?? 'Fashion'] . "?sig=" . ($i + 200);
+        $vid = ($i <= 100) ? $videos[array_rand($videos)] : null; // First 100 have videos
 
         $stmt_p->execute([
             ':name' => $name,
@@ -63,15 +72,16 @@ try {
 
         $pid = $pdo->lastInsertId();
 
-        // 2. Seed 2-3 Reviews per product for first 20 products
-        if ($i <= 20) {
-            for ($j = 0; $j < 2; $j++) {
+        // 2. Seed up to 5 Reviews for more products
+        if ($i <= 50) {
+            $num_rev = rand(3, 5);
+            for ($j = 0; $j < $num_rev; $j++) {
                 $stmt_r->execute([
                     ':uid' => $user_id,
                     ':pid' => $pid,
                     ':rating' => rand(4, 5),
-                    ':comment' => "Wah barangnya asli mewah banget! Sangat puas belanja di sini. Respons admin cepat.",
-                    ':img' => 'https://images.unsplash.com/photo-1512496015851-a90fb38ba796?sig=' . ($i * 10 + $j),
+                    ':comment' => $comments[$j % count($comments)],
+                    ':img' => (rand(1, 10) > 5) ? 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?sig=' . ($i * 10 + $j) : null,
                     ':vid' => null
                 ]);
             }

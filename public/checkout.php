@@ -161,7 +161,8 @@ if ($p_id > 0) {
                                 <div style="font-weight: 600; font-size: 14px;"><?= $item['name'] ?></div>
                                 <div style="font-size: 12px; color: #777;">Jumlah: <?= $item['selected_qty'] ?></div>
                                 <div style="color: #ff4757; font-weight: 600;">Rp
-                                    <?= number_format($item['price'] * $item['selected_qty'], 0, ',', '.') ?></div>
+                                    <?= number_format($item['price'] * $item['selected_qty'], 0, ',', '.') ?>
+                                </div>
                             </div>
                         </div>
                     <?php endforeach; ?>
@@ -188,14 +189,55 @@ if ($p_id > 0) {
             <h3><i class="fas fa-wallet" style="color: #f1c40f;"></i> Opsi Pembayaran</h3>
             <div class="payment-grid">
                 <div class="pay-tile active" onclick="setPay('COD', this)">
-                    <i class="fas fa-hand-holding-usd" style="font-size: 24px; display: block; margin-bottom: 8px;"></i>
+                    <i class="fas fa-hand-holding-usd" style="font-size: 20px; display: block; margin-bottom: 5px;"></i>
                     COD
                 </div>
                 <div class="pay-tile" onclick="setPay('COD Cek Dulu', this)">
-                    <i class="fas fa-search-dollar" style="font-size: 24px; display: block; margin-bottom: 8px;"></i>
-                    COD Cek Dulu
+                    <i class="fas fa-search-dollar" style="font-size: 20px; display: block; margin-bottom: 5px;"></i>
+                    Cek Dulu
+                </div>
+                <div class="pay-tile" onclick="setPay('BCA', this)">
+                    <i class="fas fa-university" style="font-size: 20px; display: block; margin-bottom: 5px;"></i>
+                    BCA
+                </div>
+                <div class="pay-tile" onclick="setPay('BRI', this)">
+                    <i class="fas fa-university" style="font-size: 20px; display: block; margin-bottom: 5px;"></i>
+                    BRI
+                </div>
+                <div class="pay-tile" onclick="setPay('Shopee Pay', this)">
+                    <i class="fas fa-mobile-alt" style="font-size: 20px; display: block; margin-bottom: 5px;"></i>
+                    Shopee
+                </div>
+                <div class="pay-tile" onclick="setPay('BNI', this)">
+                    <i class="fas fa-university" style="font-size: 20px; display: block; margin-bottom: 5px;"></i>
+                    BNI
+                </div>
+                <div class="pay-tile" onclick="setPay('BTN', this)">
+                    <i class="fas fa-university" style="font-size: 20px; display: block; margin-bottom: 5px;"></i>
+                    BTN
+                </div>
+                <div class="pay-tile" onclick="setPay('Mandiri', this)">
+                    <i class="fas fa-university" style="font-size: 20px; display: block; margin-bottom: 5px;"></i>
+                    Mandiri
+                </div>
+                <div class="pay-tile" onclick="setPay('Dana', this)">
+                    <i class="fas fa-wallet" style="font-size: 20px; display: block; margin-bottom: 5px;"></i>
+                    Dana
+                </div>
+                <div class="pay-tile" onclick="setPay('GoPay', this)">
+                    <i class="fas fa-wallet" style="font-size: 20px; display: block; margin-bottom: 5px;"></i>
+                    GoPay
                 </div>
             </div>
+
+            <!-- Account Number Input (Hidden by default) -->
+            <div id="accNumberBox" style="display: none; margin-top: 20px;" class="animate-fade">
+                <div class="form-group">
+                    <label id="accLabel">Nomor Rekening / HP</label>
+                    <input type="text" id="accNumberInput" class="form-input" placeholder="Masukkan nomor anda...">
+                </div>
+            </div>
+
             <input type="hidden" id="payMethodId" value="COD">
         </div>
     </div>
@@ -245,58 +287,77 @@ if ($p_id > 0) {
             document.getElementById('payMethodId').value = method;
             document.querySelectorAll('.pay-tile').forEach(t => t.classList.remove('active'));
             el.classList.add('active');
+
+            // Show/Hide Account Number Box
+            const accBox = document.getElementById('accNumberBox');
+            if (method !== 'COD' && method !== 'COD Cek Dulu') {
+                accBox.style.display = 'block';
+                document.getElementById('accLabel').innerText = `Nomor Rekening / HP (${method})`;
+            } else {
+                accBox.style.display = 'none';
+            }
         }
 
         // Final Submission
         function submitOrder() {
             const addr = document.getElementById('addressInput').value;
             const pm = document.getElementById('payMethodId').value;
+            const accNum = document.getElementById('accNumberInput').value;
             const selectedItems = [];
 
-            document.querySelectorAll('.item-list-row').forEach((row, idx) => {
-                if (row.querySelector('.checkbox-custom').checked) {
-                    selectedItems.push({
-                        id: <?= $p_id ?>,
-                        qty: row.dataset.qty,
-                        price: row.dataset.price
-                    });
-                }
-            });
-
-            if (!addr || selectedItems.length === 0) {
-                alert("Lengkapi Data Anda Terlebih Dahulu, Dan Pastikan Sudah Terisi Semua");
+            // Validation for Bank/E-Wallet
+            if (pm !== 'COD' && pm !== 'COD Cek Dulu' && !accNum) {
+                alert("Masukkan Nomor Rekening / HP untuk pembayaran via " + pm);
                 return;
             }
 
-            // In real app, AJAX POST to order_process.php
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = 'order_process.php';
+            document.querySelectorAll('.item-list-row').forEach((row, idx) => {
 
-            const fields = {
-                address: addr,
-                payment_method: pm,
-                items: JSON.stringify(selectedItems)
-            };
+                document.querySelectorAll('.item-list-row').forEach((row, idx) => {
+                    if (row.querySelector('.checkbox-custom').checked) {
+                        selectedItems.push({
+                            id: <?= $p_id ?>,
+                            qty: row.dataset.qty,
+                            price: row.dataset.price
+                        });
+                    }
+                });
 
-            for (const key in fields) {
-                const input = document.createElement('input');
-                input.type = 'hidden';
-                input.name = key;
-                input.value = fields[key];
-                form.appendChild(input);
+                if (!addr || selectedItems.length === 0) {
+                    alert("Lengkapi Data Anda Terlebih Dahulu, Dan Pastikan Sudah Terisi Semua");
+                    return;
+                }
+
+                // In real app, AJAX POST to order_process.php
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = 'order_process.php';
+
+                const fields = {
+                    address: addr,
+                    payment_method: pm,
+                    acc_number: accNum,
+                    items: JSON.stringify(selectedItems)
+                };
+
+                for (const key in fields) {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = key;
+                    input.value = fields[key];
+                    form.appendChild(input);
+                }
+
+                document.body.appendChild(form);
+                form.submit();
             }
-
-            document.body.appendChild(form);
-            form.submit();
-        }
 
         // Initial Calculation
         calculateTotal();
 
-        // Ensure maps works when scroll
-        map.on('focus', function () { map.scrollWheelZoom.enable(); });
-        map.on('blur', function () { map.scrollWheelZoom.disable(); });
+            // Ensure maps works when scroll
+            map.on('focus', function () { map.scrollWheelZoom.enable(); });
+            map.on('blur', function () { map.scrollWheelZoom.disable(); });
 
     </script>
 </body>
