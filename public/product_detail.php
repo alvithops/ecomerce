@@ -286,7 +286,8 @@ $review_count = $rating_data['count'];
         <div class="section-title">Video Preview Produk (Premium 5s)</div>
         <div class="video-box" style="box-shadow: var(--shadow-soft); border: 1px solid #eee;">
             <?php if ($product['video_url']): ?>
-                <video src="<?= $product['video_url'] ?>" autoplay muted loop playsinline controls style="width: 100%; object-fit: cover;"></video>
+                <video src="<?= $product['video_url'] ?>" autoplay muted loop playsinline controls
+                    style="width: 100%; object-fit: cover;"></video>
             <?php else: ?>
                 <div
                     style="width:100%; height:100%; display:flex; justify-content:center; align-items:center; color:#777; font-size:14px; background:#f0f0f0;">
@@ -330,21 +331,31 @@ $review_count = $rating_data['count'];
     </div>
 
     <!-- Bottom Action Bar -->
-    <div class="bottom-checkout animate-up" style="flex-wrap: wrap; height: auto;">
-        <div style="flex: 1 1 100%; display: flex; justify-content: center; margin-bottom: 10px;">
-            <div class="qty-picker">
+    <div class="bottom-checkout animate-up" style="flex-wrap: wrap; height: auto; gap: 10px; padding: 10px 15px;">
+        <div style="flex: 1 1 100%; display: flex; justify-content: center; margin-bottom: 5px;">
+            <div class="qty-picker" style="padding: 5px 15px; transform: scale(0.9);">
                 <button onclick="changeQty(-1)">-</button>
                 <span id="qtyVal">1</span>
                 <button onclick="changeQty(1)">+</button>
             </div>
         </div>
-        <button class="btn glass" onclick="location.href='chat.php?product_id=<?= $product_id ?>'"
-            style="flex: 1; padding: 15px; font-weight: 600; color: var(--secondary-main); display: flex; align-items: center; justify-content: center; gap: 8px;">
-            <i class="fas fa-comment-dots"></i> Pesan via Chat
-        </button>
-        <button class="btn btn-primary" style="flex: 1; padding: 15px; font-weight: 600;" onclick="buyNow()">
-            Beli Sekarang (Checkout)
-        </button>
+
+        <div style="display: grid; grid-template-columns: 1fr 1.2fr 1.2fr; width: 100%; gap: 8px;">
+            <button class="btn glass" onclick="location.href='chat.php?product_id=<?= $product_id ?>'"
+                style="padding: 12px 5px; font-size: 13px; font-weight: 600; color: #3498db; border: 1px solid #3498db;">
+                <i class="fas fa-comment"></i> Chat
+            </button>
+
+            <button class="btn" onclick="buyNow()"
+                style="padding: 12px 5px; font-size: 13px; font-weight: 600; background: #ff4757; color: white;">
+                <i class="fas fa-shopping-bag"></i> Pesan Skrg
+            </button>
+
+            <button class="btn btn-primary" onclick="buyNow()"
+                style="padding: 12px 5px; font-size: 13px; font-weight: 600;">
+                <i class="fas fa-receipt"></i> Checkout
+            </button>
+        </div>
     </div>
 
     <script>
@@ -394,8 +405,7 @@ $review_count = $rating_data['count'];
 
         function zoomMedia(src, isVideo = false) {
             // Basic zoom logic or open in new tab
-            window.open(src, '_blank');
-        }
+            window.open(src, '_blank');     }
     </script>
 </body>
 
