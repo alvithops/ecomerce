@@ -1,0 +1,118 @@
+/* Luxury Shope - Premium Design System */
+:root {
+    --primary-light: #D0F0C0;   /* Light Green */
+    --secondary-light: #E0F7FA; /* Light Blue */
+    --primary-main: #90EE90;
+    --secondary-main: #ADD8E6;
+    --white: #ffffff;
+    --text-dark: #2c3e50;
+    --text-muted: #7f8c8d;
+    --error: #e74c3c;
+    --success: #2ecc71;
+    --shadow-soft: 0 10px 30px rgba(0, 0, 0, 0.05);
+    --shadow-medium: 0 15px 35px rgba(0, 0, 0, 0.1);
+    --radius-lg: 24px;
+    --radius-md: 12px;
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Outfit', 'Inter', sans-serif;
+}
+
+body {
+    background: linear-gradient(135deg, var(--primary-light), var(--secondary-light));
+    color: var(--text-dark);
+    min-height: 100vh;
+    line-height: 1.6;
+}
+
+/* Glassmorphism Classes */
+.glass {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.blur-bg {
+    filter: blur(15px);
+    transition: var(--transition);
+}
+
+/* Buttons */
+.btn {
+    padding: 12px 24px;
+    border-radius: var(--radius-md);
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--primary-main), var(--secondary-main));
+    color: var(--text-dark);
+    box-shadow: 0 5px 15px rgba(144, 238, 144, 0.3);
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(144, 238, 144, 0.4);
+}
+
+/* Input Fields */
+.form-group {
+    margin-bottom: 20px;
+    text-align: left;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    font-size: 14px;
+    color: var(--text-dark);
+}
+
+.form-input {
+    width: 100%;
+    padding: 14px 18px;
+    border-radius: var(--radius-md);
+    border: 2px solid #eee;
+    background: #f9f9f9;
+    outline: none;
+    transition: var(--transition);
+}
+
+.form-input:focus {
+    border-color: var(--secondary-main);
+    background: var(--white);
+    box-shadow: 0 0 0 4px rgba(173, 216, 230, 0.2);
+}
+
+/* Animations */
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.animate-up { animation: fadeInUp 0.6s ease-out forwards; }
+.animate-fade { animation: fadeIn 0.4s ease-in forwards; }
+
+/* Responsive Utility */
+@media (max-width: 768px) {
+    .container { padding: 15px; }
+}
