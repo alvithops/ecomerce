@@ -33,6 +33,12 @@ $stmt_s = $pdo->prepare("SELECT 1 FROM user_saves WHERE user_id = ? AND product_
 $stmt_s->execute([$user_id, $product_id]);
 $is_saved = $stmt_s->fetch();
 
+// Dynamic AVG Rating
+$stmt_avg = $pdo->prepare("SELECT AVG(rating) as avg_rating, COUNT(*) as count FROM reviews WHERE product_id = ?");
+$stmt_avg->execute([$product_id]);
+$rating_data = $stmt_avg->fetch();
+$avg_rating = $rating_data['avg_rating'] ?: $product['rating'];
+$review_count = $rating_data['count'];
 ?>
 
 <!DOCTYPE html>
@@ -263,9 +269,9 @@ $is_saved = $stmt_s->fetch();
         </div>
 
         <div class="stats-row">
-            <span><i class="fas fa-star" style="color: #f1c40f;"></i> <?= $product['rating'] ?></span>
+            <span><i class="fas fa-star" style="color: #f1c40f;"></i> <?= number_format($avg_rating, 1) ?></span>
             <span>| <?= rand(100, 2000) ?> Terjual</span>
-            <span>| <?= count($reviews) ?> Ulasan</span>
+            <span>| <?= $review_count ?> Ulasan</span>
         </div>
 
         <div class="section-title">Deskripsi Produk</div>

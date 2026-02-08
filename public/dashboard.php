@@ -334,7 +334,8 @@ $shipping_list = $stmt_shipping->fetchAll();
                             <div style="flex:1">
                                 <div style="font-weight: 600;">Pesanan #<?= $o['id'] ?></div>
                                 <div style="font-size: 12px; color: #777;">Total: Rp
-                                    <?= number_format($o['total_price'], 0, ',', '.') ?></div>
+                                    <?= number_format($o['total_price'], 0, ',', '.') ?>
+                                </div>
                                 <div style="font-size: 11px; color: #999;"><?= $o['created_at'] ?></div>
                             </div>
                             <span class="status-pill <?= strtolower(str_replace(' ', '', 'status-' . $o['status'])) ?>">
@@ -410,16 +411,28 @@ $shipping_list = $stmt_shipping->fetchAll();
 
             <!-- Profile Action Options -->
             <div style="margin-top: 30px; text-align: left;">
-                <div class="btn"
-                    style="width: 100%; justify-content: space-between; background: white; margin-bottom: 10px; box-shadow: var(--shadow-soft);"
-                    onclick="alert('Buka Pengaturan Akun...')">
-                    <span><i class="fas fa-cog" style="margin-right: 10px;"></i> Pengaturan Akun</span>
-                    <i class="fas fa-chevron-right"></i>
+                <div
+                    style="background: white; padding: 15px; border-radius: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; box-shadow: var(--shadow-soft);">
+                    <span><i class="fas fa-bell" style="margin-right: 10px; color: #f1c40f;"></i> Notifikasi
+                        Sistem</span>
+                    <label class="switch">
+                        <input type="checkbox" id="notifToggle" <?= $pdo->query("SELECT notifications_enabled FROM users WHERE id = $user_id")->fetch()['notifications_enabled'] ? 'checked' : '' ?>
+                            onchange="updateNotifSetting(this.checked)">
+                        <span class="slider round"></span>
+                    </label>
                 </div>
                 <div class="btn"
                     style="width: 100%; justify-content: space-between; background: white; margin-bottom: 10px; box-shadow: var(--shadow-soft);"
                     onclick="location.href='chat.php'">
-                    <span><i class="fas fa-comment-dots" style="margin-right: 10px;"></i> Chat Hubungi Penjual</span>
+                    <span><i class="fas fa-comment-dots" style="margin-right: 10px; color: var(--secondary-main);"></i>
+                        Pesan Ke Pemilik</span>
+                    <i class="fas fa-chevron-right"></i>
+                </div>
+                <div class="btn"
+                    style="width: 100%; justify-content: space-between; background: white; margin-bottom: 10px; box-shadow: var(--shadow-soft);"
+                    onclick="alert('Membuka Pengaturan Akun...')">
+                    <span><i class="fas fa-user-cog" style="margin-right: 10px; color: #999;"></i> Pengaturan
+                        Akun</span>
                     <i class="fas fa-chevron-right"></i>
                 </div>
                 <a href="logout.php" class="btn"
@@ -520,6 +533,32 @@ $shipping_list = $stmt_shipping->fetchAll();
             }
             container.innerHTML = html;
         }
+
+        function updateNotifSetting(enabled) {
+            const fd = new FormData();
+            fd.append('enabled', enabled);
+            fetch('toggle_notifications.php', { method: 'POST', body: fd })
+                .then(r => r.json())
+                .then(data => {
+                    if (!data.success) alert('Gagal memperbarui pengaturan.');
+                });
+        }
+
+        // Handle URL Hash for section switching
+        window.addEventListener('DOMContentLoaded', () => {
+            const hash = window.location.hash.replace('#', '');
+            if (hash) {
+                const map = {
+                    'riwayat': 1,
+                    'notif': 2,
+                    'profil': 3
+                };
+                const items = document.querySelectorAll('.nav-item');
+                if (map[hash] !== undefined) {
+                    switchSection(hash, items[map[hash]]);
+                }
+            }
+        });
     </script>
 </body>
 

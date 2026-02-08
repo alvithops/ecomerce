@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS users (
     password VARCHAR(255) NOT NULL,
     clue_password VARCHAR(255) NOT NULL,
     foto_profil VARCHAR(255) DEFAULT 'default_user.png',
+    notifications_enabled BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

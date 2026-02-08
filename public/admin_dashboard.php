@@ -178,10 +178,11 @@ $new_chats = 5;             // Simulated
             <i class="fas fa-gem"></i> Luxury Admin
         </div>
 
-        <button class="side-btn active"><i class="fas fa-columns"></i> Dashboard Hub</button>
+        <button class="side-btn active" onclick="location.reload()"><i class="fas fa-columns"></i> Dashboard
+            Hub</button>
         <button onclick="openModule('profile')" class="side-btn"><i class="fas fa-user-tie"></i> Profile Admin</button>
         <button onclick="openModule('sales')" class="side-btn"><i class="fas fa-chart-pie"></i> Info Penjualan</button>
-        <button onclick="openModule('chat')" class="side-btn"><i class="fas fa-comments"></i> Chat Pelanggan</button>
+        <button onclick="openModule('chat')" class="side-btn"><i class="fas fa-comments"></i> Chat</button>
         <button onclick="openModule('product')" class="side-btn"><i class="fas fa-boxes"></i> Setting Produk</button>
         <button onclick="openModule('promo')" class="side-btn"><i class="fas fa-bullhorn"></i> Pengumuman</button>
 
@@ -206,7 +207,8 @@ $new_chats = 5;             // Simulated
             <div class="stat-box animate-up">
                 <div style="color: #999; font-size: 13px;">Total Omzet</div>
                 <div style="font-size: 24px; font-weight: 700; margin-top: 5px;">Rp
-                    <?= number_format($total_revenue, 0, ',', '.') ?></div>
+                    <?= number_format($total_revenue, 0, ',', '.') ?>
+                </div>
             </div>
             <div class="stat-box animate-up" style="animation-delay: 0.1s; border-left-color: var(--secondary-main);">
                 <div style="color: #999; font-size: 13px;">Pesanan Masuk</div>
@@ -302,7 +304,7 @@ $new_chats = 5;             // Simulated
                             <canvas id="salesChart" style="width: 100%; height: 250px;"></canvas>
                         </div>
                         <div style="background:#f9f9f9; padding:20px; border-radius:20px;">
-                            <h4>Record Pesanan Terbaru</h4>
+                            <h4>Record Penjualan</h4>
                             <div style="margin-top: 15px; font-size: 12px;">
                                 <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #eee;">
                                     <span>ORD #881 - Andi P.</span>
@@ -312,10 +314,11 @@ $new_chats = 5;             // Simulated
                                     <span>ORD #880 - Budi S.</span>
                                     <strong style="color:#2ecc71">Rp 4.5jt</strong>
                                 </div>
-                                <div style="display:flex; justify-content:space-between; padding:10px 0;">
-                                    <span>ORD #879 - Citra T.</span>
-                                    <strong style="color:#2ecc71">Rp 150rb</strong>
-                                </div>
+                            </div>
+                            <h4 style="margin-top: 25px;">Pesan Terbaru Pemesan</h4>
+                            <div style="margin-top: 10px; font-size: 11px; color: #666;">
+                                <div style="padding: 8px; background: white; border-radius: 8px; margin-bottom: 5px;">"Stok jam tangan emas yang #22 masih ada?" - <strong>Lia</strong></div>
+                                <div style="padding: 8px; background: white; border-radius: 8px;">"Makasih min barang sudah dipajang!" - <strong>Rian</strong></div>
                             </div>
                         </div>
                     </div>
@@ -323,21 +326,24 @@ $new_chats = 5;             // Simulated
                 initSalesChart();
             } else if (type === 'chat') {
                 content.innerHTML = `
-                    <h2 style="margin-bottom: 30px;"><i class="fas fa-comments"></i> Pusat Chat Pelanggan</h2>
+                    <h2 style="margin-bottom: 30px;"><i class="fas fa-comments"></i> Pusat Chat Pelanggan (Berdasarkan Produk)</h2>
                     <div style="display: grid; grid-template-columns: 250px 1fr; border: 1px solid #eee; border-radius: 15px; overflow: hidden; height: 400px;">
                         <div style="background: #f8f8f8; border-right: 1px solid #eee; overflow-y: auto;">
                             <div style="padding: 15px; background: white; border-bottom: 1px solid #eee;"><strong>Pesan Masuk</strong></div>
                             <div style="padding: 15px; border-bottom: 1px solid #eee; background: var(--secondary-light); cursor: pointer;">
                                 <div style="font-weight: 600; font-size: 13px;">Andi Pratama</div>
+                                <div style="font-size: 11px; color: var(--primary-main);">Produk: Exclusive Bag #12</div>
                                 <div style="font-size: 11px; color: #777; overflow: hidden; white-space: nowrap;">Halo, apakah barang ready?</div>
                             </div>
                             <div style="padding: 15px; border-bottom: 1px solid #eee; cursor: pointer;">
                                 <div style="font-weight: 600; font-size: 13px;">Budi Santoso</div>
+                                <div style="font-size: 11px; color: var(--primary-main);">Produk: Luxury Watch #45</div>
                                 <div style="font-size: 11px; color: #777; overflow: hidden; white-space: nowrap;">Terima kasih barang sudah sampai...</div>
                             </div>
                         </div>
                         <div style="display: flex; flex-direction: column;">
                             <div style="flex: 1; padding: 20px; background: white; overflow-y: auto;">
+                                <div style="font-size: 12px; color: #999; text-align: center; margin-bottom: 15px;">Menampilkan Chat untuk: Andi Pratama (Exclusive Bag #12)</div>
                                 <div style="display: inline-block; background: #f0f0f0; padding: 10px; border-radius: 10px; margin-bottom: 10px;">Halo, apakah barang ready?</div>
                                 <div style="text-align: right;"><div style="display: inline-block; background: var(--secondary-main); color: white; padding: 10px; border-radius: 10px;">Tentu, barang premium kami selalu ready!</div></div>
                             </div>
@@ -349,50 +355,37 @@ $new_chats = 5;             // Simulated
                     </div>
                 `;
             } else if (type === 'product') {
-                content.innerHTML = `
-                    <h2 style="margin-bottom: 30px;"><i class="fas fa-boxes"></i> Setting Stok Produk (500+ Items)</h2>
+                content.innerHTML = `<h2 style="margin-bottom: 30px;"><i class="fas fa-boxes"></i> Setting Stok Produk (Live)</h2>
                     <div style="margin-bottom: 20px;">
-                        <input type="text" placeholder="Cari nama produk..." class="form-input" style="width: 300px;">
+                        <input type="text" id="pSearch" placeholder="Cari nama produk..." class="form-input" style="width: 300px;" onkeyup="filterAdminProducts()">
                     </div>
-                    <div style="height: 350px; overflow-y: auto;">
+                    <div style="height: 400px; overflow-y: auto;">
                         <table style="width: 100%; text-align: left; border-collapse: collapse;">
-                            <thead style="background: #f1f1f1; position: sticky; top: 0;">
+                            <thead style="background: #f1f1f1; position: sticky; top: 0; z-index:1;">
                                 <tr>
+                                    <th style="padding: 12px;">ID</th>
                                     <th style="padding: 12px;">Nama Produk</th>
                                     <th style="padding: 12px;">Stok</th>
-                                    <th style="padding: 12px;">Status</th>
                                     <th style="padding: 12px;">Aksi</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                <tr style="border-bottom: 1px solid #eee;">
-                                    <td style="padding: 12px;">Exclusive Bag Vol. 1</td>
-                                    <td style="padding: 12px;"><input type="number" value="45" style="width: 60px;"></td>
-                                    <td style="padding: 12px;"><span class="status-pill status-shipping">Tersedia</span></td>
-                                    <td style="padding: 12px;"><button class="btn" style="background: #ff4757; color: white; font-size: 10px;">Mark Habis</button></td>
-                                </tr>
-                                <tr style="border-bottom: 1px solid #eee;">
-                                    <td style="padding: 12px;">Luxury Watch Vol. 12</td>
-                                    <td style="padding: 12px;"><input type="number" value="0" style="width: 60px;"></td>
-                                    <td style="padding: 12px;"><span class="status-pill status-unpaid">Habis</span></td>
-                                    <td style="padding: 12px;"><button class="btn" style="background: #2ecc71; color: white; font-size: 10px;">Restock</button></td>
-                                </tr>
-                                <!-- More products would load here -->
+                            <tbody id="adminPList">
+                                <tr id="loadingP"><td colspan="4" style="text-align:center; padding:20px;">Memuat data produk...</td></tr>
                             </tbody>
                         </table>
-                    </div>
-                `;
+                    </div>`;
+                fetchAdminProducts();
             } else if (type === 'promo') {
                 content.innerHTML = `
                     <h2 style="margin-bottom: 30px;"><i class="fas fa-bullhorn"></i> Broadcast Pengumuman Global</h2>
-                    <form onsubmit="event.preventDefault(); alert('Pengumuman Berhasil Dikirim ke Semua Pemesan!'); closeModule();">
+                    <form id="promoForm">
                         <div class="form-group">
                             <label>Judul Pengumuman</label>
-                            <input type="text" class="form-input" placeholder="Contoh: Promo Flash Sale Weekend!" required>
+                            <input type="text" name="title" class="form-input" placeholder="Contoh: Promo Flash Sale Weekend!" required>
                         </div>
                         <div class="form-group">
                             <label>Pilih Kategori</label>
-                            <select class="form-input">
+                            <select name="type" class="form-input">
                                 <option>Diskon</option>
                                 <option>Pengumuman</option>
                                 <option>Info Penting</option>
@@ -400,12 +393,77 @@ $new_chats = 5;             // Simulated
                         </div>
                         <div class="form-group">
                             <label>Isi Pesan</label>
-                            <textarea class="form-input" rows="4" placeholder="Tulis rincian pengumuman di sini..." required></textarea>
+                            <textarea name="message" class="form-input" rows="4" placeholder="Tulis rincian pengumuman di sini..." required></textarea>
                         </div>
                         <button type="submit" class="btn btn-primary" style="width:100%; padding: 15px;">Kirim Sekarang</button>
                     </form>
                 `;
+
+                document.getElementById('promoForm').onsubmit = function (e) {
+                    e.preventDefault();
+                    const fd = new FormData(this);
+                    fetch('admin_send_notif.php', { method: 'POST', body: fd })
+                        .then(r => r.json())
+                        .then(data => {
+                            if (data.success) {
+                                alert('Pengumuman Berhasil Dikirim ke Semua Pemesan!');
+                                closeModule();
+                            } else alert('Gagal: ' + data.message);
+                        });
+                };
             }
+        }
+
+        // Feature functions for Admin
+        function fetchAdminProducts() {
+            fetch('get_products_json.php')
+                .then(r => r.json())
+                .then(data => {
+                    const list = document.getElementById('adminPList');
+                    list.innerHTML = '';
+                    data.forEach(p => {
+                        const statusClass = p.stock > 0 ? 'status-shipping' : 'status-unpaid';
+                        const statusText = p.stock > 0 ? 'Tersedia' : 'Habis';
+                        list.innerHTML += `
+                        <tr style="border-bottom: 1px solid #eee;" class="p-row" data-name="${p.name.toLowerCase()}">
+                            <td style="padding: 12px;">#${p.id}</td>
+                            <td style="padding: 12px;">${p.name}</td>
+                            <td style="padding: 12px;">
+                                <input type="number" id="s-${p.id}" value="${p.stock}" style="width: 60px;" class="form-input">
+                            </td>
+                            <td style="padding: 12px; display:flex; gap:5px;">
+                                <button onclick="updateStock(${p.id}, 'update')" class="btn" style="background:var(--secondary-main); color:white; font-size:10px;">Simpan</button>
+                                <button onclick="updateStock(${p.id}, 'out')" class="btn" style="background: #ff4757; color: white; font-size: 10px;">Mark Habis</button>
+                            </td>
+                        </tr>
+                    `;
+                    });
+                });
+        }
+
+        function filterAdminProducts() {
+            const val = document.getElementById('pSearch').value.toLowerCase();
+            document.querySelectorAll('.p-row').forEach(row => {
+                row.style.display = row.dataset.name.includes(val) ? '' : 'none';
+            });
+        }
+
+        function updateStock(id, action) {
+            const stock = document.getElementById('s-' + id).value;
+            const fd = new FormData();
+            fd.append('product_id', id);
+            fd.append('stock', stock);
+            fd.append('action', action);
+
+            fetch('admin_update_stock.php', { method: 'POST', body: fd })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Status stok diperbarui!');
+                        fetchAdminProducts();
+                    } else alert('Gagal: ' + data.message);
+                });
+        }
         }
 
         function closeModule() {

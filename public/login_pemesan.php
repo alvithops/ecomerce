@@ -44,20 +44,47 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $username = trim($_POST['username'] ?? '');
         $password = $_POST['password'] ?? '';
 
-        $stmt = $pdo->prepare("SELECT * FROM users WHERE username = ?");
+        if (empty($username) || empty($password)) {
+            $error_message = "Username & Password anda salah";
+        } else {
+            $stmt = $pdo->prepare("SELECT * FROM users WHERE username = ?");
+            $stmt->execute([$username]);
+            $user = $stmt->fetch();
+
+            if (!$user) {
+                // Point 2A says "Jika klik Login tapi belum terdaftar → Username dan Passwordmu Belum Terdaftar. Daftar Terlebih Dahulu"
+                // But it also says "Jika username salah → Username salah"
+                // I will prioritize the "unregistered" message if the user isn't found at all.
+                $error_message = "Username dan Passwordmu Belum Terdaftar. Daftar Terlebih Dahulu";
+            } else {
+                if (password_verify($password, $user['password'])) {
+                    $_SESSION['user_id'] = $user['id'];
+                    $_SESSION['user_nama'] = $user['nama_pengguna'];
+                    header("Location: dashboard.php");
+                    exit();
+                } else {
+                    $error_message = "Password salah";
+                }
+            }
+        }
+    }
+
+    // LUPA PASSWORD PEMESAN (VIA CLUE)
+    else if ($action == 'forgot_check') {
+        $username = trim($_POST['username'] ?? '');
+        $clue = trim($_POST['clue'] ?? '');
+
+        $stmt = $pdo->prepare("SELECT clue_password, password FROM users WHERE username = ?");
         $stmt->execute([$username]);
         $user = $stmt->fetch();
 
         if (!$user) {
-            $error_message = "Username dan Passwordmu Belum Terdaftar. Daftar Terlebih Dahulu";
+            $error_message = "Username tidak terdaftar!";
         } else {
-            if (password_verify($password, $user['password'])) {
-                $_SESSION['user_id'] = $user['id'];
-                $_SESSION['user_nama'] = $user['nama_pengguna'];
-                header("Location: dashboard.php");
-                exit();
+            if (strtolower($user['clue_password']) === strtolower($clue)) {
+                $success_message = "Clue Benar! Silakan hubungi admin atau reset password (Simulasi: Password lama anda terverifikasi).";
             } else {
-                $error_message = "Password salah";
+                $error_message = "Clue password salah!";
             }
         }
     }
@@ -305,14 +332,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         <div id="forgotUserModal" class="modal-body animate-up" style="display: none; max-width: 450px;">
             <h2 class="auth-title">Lupa Password</h2>
             <p class="auth-subtitle">Gunakan clue keamanan anda</p>
-            <div class="form-group">
-                <label>Username</label>
-                <input type="text" id="forgot_username" class="form-input" placeholder="Username anda">
-            </div>
-            <button type="button" class="btn btn-primary" style="width:100%"
-                onclick="alert('Fitur ini akan mengecek clue di database.')">Cek Clue</button>
-            <button type="button" class="btn" style="width:100%; margin-top:10px; background:#eee"
-                onclick="closeModal()">Tutup</button>
+            <form action="" method="POST">
+                <input type="hidden" name="action" value="forgot_check">
+                <div class="form-group">
+                    <label>Username</label>
+                    <input type="text" name="username" class="form-input" placeholder="Username anda" required>
+                </div>
+                <div class="form-group">
+                    <label>Clue Jawaban</label>
+                    <input type="text" name="clue" class="form-input" placeholder="Clue keamanan anda" required>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width:100%">Cek Clue</button>
+                <button type="button" class="btn" style="width:100%; margin-top:10px; background:#eee"
+                    onclick="closeModal()">Tutup</button>
+            </form>
         </div>
     </div>
 
