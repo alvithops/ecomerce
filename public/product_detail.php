@@ -283,10 +283,10 @@ $review_count = $rating_data['count'];
         </div>
 
         <!-- Video Demo Section -->
-        <div class="section-title">Video Contoh Produk</div>
-        <div class="video-box">
+        <div class="section-title">Video Preview Produk (Premium 5s)</div>
+        <div class="video-box" style="box-shadow: var(--shadow-soft); border: 1px solid #eee;">
             <?php if ($product['video_url']): ?>
-                <video src="<?= $product['video_url'] ?>" controls></video>
+                <video src="<?= $product['video_url'] ?>" autoplay muted loop playsinline controls style="width: 100%; object-fit: cover;"></video>
             <?php else: ?>
                 <div
                     style="width:100%; height:100%; display:flex; justify-content:center; align-items:center; color:#777; font-size:14px; background:#f0f0f0;">
@@ -330,17 +330,21 @@ $review_count = $rating_data['count'];
     </div>
 
     <!-- Bottom Action Bar -->
-    <div class="bottom-checkout animate-up">
-        <button class="btn glass" onclick="location.href='chat.php?product_id=<?= $product_id ?>'"
-            style="padding: 15px; font-size: 18px; color: var(--secondary-main);"><i
-                class="fas fa-comment-dots"></i></button>
-        <div class="qty-picker">
-            <button onclick="changeQty(-1)">-</button>
-            <span id="qtyVal">1</span>
-            <button onclick="changeQty(1)">+</button>
+    <div class="bottom-checkout animate-up" style="flex-wrap: wrap; height: auto;">
+        <div style="flex: 1 1 100%; display: flex; justify-content: center; margin-bottom: 10px;">
+            <div class="qty-picker">
+                <button onclick="changeQty(-1)">-</button>
+                <span id="qtyVal">1</span>
+                <button onclick="changeQty(1)">+</button>
+            </div>
         </div>
-        <button class="btn btn-primary" style="flex: 1; padding: 15px; font-weight: 600;" onclick="buyNow()">Beli
-            Sekarang / Checkout</button>
+        <button class="btn glass" onclick="location.href='chat.php?product_id=<?= $product_id ?>'"
+            style="flex: 1; padding: 15px; font-weight: 600; color: var(--secondary-main); display: flex; align-items: center; justify-content: center; gap: 8px;">
+            <i class="fas fa-comment-dots"></i> Pesan via Chat
+        </button>
+        <button class="btn btn-primary" style="flex: 1; padding: 15px; font-weight: 600;" onclick="buyNow()">
+            Beli Sekarang (Checkout)
+        </button>
     </div>
 
     <script>

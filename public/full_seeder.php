@@ -56,7 +56,7 @@ try {
         $stock = rand(5, 100);
         $rating = rand(45, 50) / 10;
         $img = $images[explode(' ', $cat)[1] ?? 'Fashion'] . "?sig=" . ($i + 200);
-        $vid = ($i <= 100) ? $videos[array_rand($videos)] : null; // First 100 have videos
+        $vid = $videos[array_rand($videos)]; // Every product gets a video now
 
         $stmt_p->execute([
             ':name' => $name,
@@ -72,19 +72,17 @@ try {
 
         $pid = $pdo->lastInsertId();
 
-        // 2. Seed up to 5 Reviews for more products
-        if ($i <= 50) {
-            $num_rev = rand(3, 5);
-            for ($j = 0; $j < $num_rev; $j++) {
-                $stmt_r->execute([
-                    ':uid' => $user_id,
-                    ':pid' => $pid,
-                    ':rating' => rand(4, 5),
-                    ':comment' => $comments[$j % count($comments)],
-                    ':img' => (rand(1, 10) > 5) ? 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?sig=' . ($i * 10 + $j) : null,
-                    ':vid' => null
-                ]);
-            }
+        // 2. Seed 3-5 Reviews for EVERY product
+        $num_rev = rand(3, 5);
+        for ($j = 0; $j < $num_rev; $j++) {
+            $stmt_r->execute([
+                ':uid' => $user_id,
+                ':pid' => $pid,
+                ':rating' => rand(4, 5),
+                ':comment' => $comments[$j % count($comments)],
+                ':img' => (rand(1, 10) > 5) ? 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?sig=' . ($i * 10 + $j) : null,
+                ':vid' => null
+            ]);
         }
 
         if ($i % 50 == 0)

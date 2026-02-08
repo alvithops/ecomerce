@@ -141,8 +141,38 @@ if ($product_id > 0) {
     </div>
 
     <script>
-        // Scroll to bottom on load
         const container = document.querySelector('.chat-container');
+        const input = document.querySelector('.form-input');
+
+        function sendMessage() {
+            const text = input.value.trim();
+            if (!text) return;
+
+            const msgDiv = document.createElement('div');
+            msgDiv.className = 'msg msg-out';
+            msgDiv.innerText = text;
+            container.appendChild(msgDiv);
+
+            input.value = '';
+            container.scrollTop = container.scrollHeight;
+
+            // Simulated Admin Reply
+            setTimeout(() => {
+                const replyDiv = document.createElement('div');
+                replyDiv.className = 'msg msg-in';
+                replyDiv.innerText = "Baik, pesan Anda telah kami terima. Admin akan segera merespons pertanyaan Anda mengenai produk tersebut.";
+                container.appendChild(replyDiv);
+                container.scrollTop = container.scrollHeight;
+            }, 1000);
+        }
+
+        // Send on click and enter
+        document.querySelector('.btn-primary').addEventListener('click', sendMessage);
+        input.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
+
+        // Scroll to bottom on load
         container.scrollTop = container.scrollHeight;
     </script>
 </body>

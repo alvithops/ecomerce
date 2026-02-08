@@ -311,53 +311,51 @@ if ($p_id > 0) {
                 return;
             }
 
-            document.querySelectorAll('.item-list-row').forEach((row, idx) => {
-
-                document.querySelectorAll('.item-list-row').forEach((row, idx) => {
-                    if (row.querySelector('.checkbox-custom').checked) {
-                        selectedItems.push({
-                            id: <?= $p_id ?>,
-                            qty: row.dataset.qty,
-                            price: row.dataset.price
-                        });
-                    }
-                });
-
-                if (!addr || selectedItems.length === 0) {
-                    alert("Lengkapi Data Anda Terlebih Dahulu, Dan Pastikan Sudah Terisi Semua");
-                    return;
+            document.querySelectorAll('.item-list-row').forEach((row) => {
+                if (row.querySelector('.checkbox-custom').checked) {
+                    selectedItems.push({
+                        id: <?= $p_id ?>,
+                        qty: row.dataset.qty,
+                        price: row.dataset.price
+                    });
                 }
+            });
 
-                // In real app, AJAX POST to order_process.php
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.action = 'order_process.php';
-
-                const fields = {
-                    address: addr,
-                    payment_method: pm,
-                    acc_number: accNum,
-                    items: JSON.stringify(selectedItems)
-                };
-
-                for (const key in fields) {
-                    const input = document.createElement('input');
-                    input.type = 'hidden';
-                    input.name = key;
-                    input.value = fields[key];
-                    form.appendChild(input);
-                }
-
-                document.body.appendChild(form);
-                form.submit();
+            if (!addr || selectedItems.length === 0) {
+                alert("Lengkapi Data Anda Terlebih Dahulu, Dan Pastikan Sudah Terisi Semua");
+                return;
             }
+
+            // In real app, AJAX POST to order_process.php
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = 'order_process.php';
+
+            const fields = {
+                address: addr,
+                payment_method: pm,
+                acc_number: accNum,
+                items: JSON.stringify(selectedItems)
+            };
+
+            for (const key in fields) {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = key;
+                input.value = fields[key];
+                form.appendChild(input);
+            }
+
+            document.body.appendChild(form);
+            form.submit();
+        }
 
         // Initial Calculation
         calculateTotal();
 
-            // Ensure maps works when scroll
-            map.on('focus', function () { map.scrollWheelZoom.enable(); });
-            map.on('blur', function () { map.scrollWheelZoom.disable(); });
+        // Ensure maps works when scroll
+        map.on('focus', function () { map.scrollWheelZoom.enable(); });
+        map.on('blur', function () { map.scrollWheelZoom.disable(); });
 
     </script>
 </body>
