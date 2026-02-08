@@ -10,6 +10,8 @@ $admin_credentials = [
     'clue' => 'Warna kesukaan admin adalah biru'
 ];
 
+// Admin tidak perlu mendaftar, akun sudah terdaftar di sistem secara internal.
+
 /**
  * Simulasi Database User (Dalam Sesi untuk demonstrasi tanpa DB SQL nyata dulu)
  * Sesuai permintaan: Username, Email, Nama, Alamat, Usia, Password, Clue
@@ -97,6 +99,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             // Jika username tidak ada sama sekali di session users (sudah ditangani di atas)
         }
     } else if ($action == 'login_admin') {
+        // Logika login admin langsung menggunakan kredensial hardcoded tanpa melalui database/registrasi
         $username = $_POST['username'] ?? '';
         $password = $_POST['password'] ?? '';
 
@@ -105,7 +108,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             header("Location: admin_dashboard.php");
             exit();
         } else {
-            // Sesuai permintaan spesifik untuk admin
+            // Tampilkan pesan error sesuai permintaan spesifik
             if ($username != $admin_credentials['username'] && $password != $admin_credentials['password']) {
                 $error_message = "Username & Password anda salah";
             } else if ($username != $admin_credentials['username']) {
