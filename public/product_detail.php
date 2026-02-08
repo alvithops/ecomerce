@@ -346,7 +346,7 @@ $review_count = $rating_data['count'];
                 <i class="fas fa-comment"></i> Chat
             </button>
 
-            <button class="btn" onclick="buyNow()"
+            <button class="btn" onclick="buyNow(true)"
                 style="padding: 12px 5px; font-size: 13px; font-weight: 600; background: #ff4757; color: white;">
                 <i class="fas fa-shopping-bag"></i> Pesan Skrg
             </button>
@@ -390,9 +390,10 @@ $review_count = $rating_data['count'];
             document.getElementById('qtyVal').innerText = val;
         }
 
-        function buyNow() {
+        function buyNow(isDirect = false) {
             const qty = document.getElementById('qtyVal').innerText;
-            location.href = `checkout.php?id=<?= $product_id ?>&qty=${qty}`;
+            // Add to cart and redirect to checkout
+            location.href = `cart_add.php?id=<?= $product_id ?>&qty=${qty}`;
         }
 
         function shareProduct() {
@@ -405,7 +406,8 @@ $review_count = $rating_data['count'];
 
         function zoomMedia(src, isVideo = false) {
             // Basic zoom logic or open in new tab
-            window.open(src, '_blank');     }
+            window.open(src, '_blank');
+        }
     </script>
 </body>
 
