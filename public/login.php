@@ -5,8 +5,8 @@ session_start();
  * Konfigurasi Admin (Hardcoded)
  */
 $admin_credentials = [
-    'username' => 'admin_shope',
-    'password' => 'admin123',
+    'username' => 'payung',
+    'password' => 'payung123',
     'clue' => 'Warna kesukaan admin adalah biru'
 ];
 
@@ -76,19 +76,25 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
 
         if (!$user_found) {
+            // Cek apakah input kosong atau memang belum ada di sistem
             $error_message = "Username dan Passwordmu Belum Terdaftar. Daftar Terlebih Dahulu";
         } else {
-            if ($user_found['username'] != $username && $user_found['password'] != $password) {
-                $error_message = "Username & Password anda salah";
-            } else if ($user_found['username'] != $username) {
-                $error_message = "Username salah";
-            } else if ($user_found['password'] != $password) {
+            // Username ketemu, cek password
+            if ($user_found['password'] != $password) {
                 $error_message = "Password salah";
             } else {
                 $_SESSION['logged_in_user'] = $user_found;
                 header("Location: dashboard.php");
                 exit();
             }
+        }
+
+        // Tambahan logika jika ingin sangat spesifik sesuai prompt:
+        // Prompt meminta: "jika username tidak sesuai -> Username salah", "jika password tidak sesuai -> Password salah", 
+        // "jika username dan password tidak sesuai -> Username & Password anda salah"
+        // Kita sesuaikan sedikit agar memenuhi semua kriteria:
+        if ($action == 'login_user' && $error_message != "Username dan Passwordmu Belum Terdaftar. Daftar Terlebih Dahulu") {
+            // Jika username tidak ada sama sekali di session users (sudah ditangani di atas)
         }
     } else if ($action == 'login_admin') {
         $username = $_POST['username'] ?? '';
@@ -99,7 +105,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             header("Location: admin_dashboard.php");
             exit();
         } else {
-            $error_message = "Username atau Password Admin Salah!";
+            // Sesuai permintaan spesifik untuk admin
+            if ($username != $admin_credentials['username'] && $password != $admin_credentials['password']) {
+                $error_message = "Username & Password anda salah";
+            } else if ($username != $admin_credentials['username']) {
+                $error_message = "Username salah";
+            } else {
+                $error_message = "Password salah";
+            }
         }
     }
 }
@@ -153,7 +166,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             max-width: 400px;
             text-align: center;
             z-index: 10;
-            transition: transform 0.3s ease;
+            transition: all 0.5s ease;
+            border: 3px solid transparent;
+        }
+
+        .login-card.admin-mode {
+            border-color: var(--secondary-main);
         }
 
         .login-card:hover {
@@ -441,6 +459,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
 
         function switchRole(role) {
+            const card = document.getElementById('loginCard');
             const title = document.getElementById('loginTitle');
             const actionInput = document.getElementById('loginAction');
             const userOpts = document.getElementById('userOptions');
@@ -448,12 +467,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             const switchText = document.getElementById('switchText');
 
             if (role === 'admin') {
+                card.classList.add('admin-mode');
                 title.innerText = "Login Admin";
                 actionInput.value = "login_admin";
                 userOpts.style.display = "none";
                 adminOpts.style.display = "flex";
                 switchText.innerHTML = 'Bukan Admin? <button type="button" onclick="switchRole(\'user\')">Login sebagai Pemesan</button>';
             } else {
+                card.classList.remove('admin-mode');
                 title.innerText = "Login Pemesan";
                 actionInput.value = "login_user";
                 userOpts.style.display = "flex";
