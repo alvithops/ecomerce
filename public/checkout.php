@@ -235,11 +235,13 @@ if (isset($_GET['id']) && $_GET['id'] > 0) {
             const selectedItems = [];
             document.querySelectorAll('.item-list-row').forEach(row => {
                 if (row.querySelector('.checkbox-custom').checked) {
+                    const img = row.querySelector('.item-thumb').src;
                     selectedItems.push({
                         id: row.dataset.id,
                         name: row.querySelector('.p-name-el')?.innerText || 'Product',
                         qty: row.dataset.qty,
-                        price: row.dataset.price
+                        price: row.dataset.price,
+                        image_url: img
                     });
                 }
             });

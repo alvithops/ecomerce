@@ -109,6 +109,29 @@ foreach ($selected_items as $si) {
     </header>
 
     <div class="animate-fade">
+        <!-- 0. Ordered Items List (Daftar Checkout) -->
+        <div class="card-box animate-up" style="padding-bottom: 15px;">
+            <h3 style="margin-bottom: 15px;"><i class="fas fa-receipt" style="color: var(--primary-main);"></i> Daftar Checkout</h3>
+            <div id="orderedItems">
+                <?php foreach ($selected_items as $si): ?>
+                    <div style="display: flex; gap: 12px; margin-bottom: 12px; align-items: center; border-bottom: 1px solid #f0f0f0; padding-bottom: 10px;">
+                        <img src="<?= htmlspecialchars($si['image_url'] ?? 'https://via.placeholder.com/60') ?>" style="width: 50px; height: 50px; border-radius: 8px; object-fit: cover;">
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600; font-size: 13px;"><?= htmlspecialchars($si['name'] ?? 'Produk') ?></div>
+                            <div style="font-size: 11px; color: #777;">Jumlah: <?= $si['qty'] ?></div>
+                        </div>
+                        <div style="font-weight: 600; color: #ff4757; font-size: 13px;">
+                            Rp <?= number_format($si['price'] * $si['qty'], 0, ',', '.') ?>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-weight: 700; font-size: 15px; margin-top: 10px; color: #333;">
+                <span>Total Barang (<?= count($selected_items) ?>)</span>
+                <span style="color: #ff4757;">Rp <?= number_format($final_total, 0, ',', '.') ?></span>
+            </div>
+        </div>
+
         <!-- 1. Address Section with Maps -->
         <div class="card-box animate-up">
             <h3 style="margin-bottom: 10px;"><i class="fas fa-map-marked-alt" style="color: var(--secondary-main);"></i>
