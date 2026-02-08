@@ -131,7 +131,7 @@ if (isset($_GET['id']) && $_GET['id'] > 0) {
 
     <header class="header-main glass" style="justify-content: flex-start; gap: 15px;">
         <a href="javascript:history.back()" style="color: #333;"><i class="fas fa-arrow-left"></i></a>
-        <h1 style="font-size: 18px;">Checkout Pesanan</h1>
+        <h1 style="font-size: 18px;">Pilihan Produk</h1>
     </header>
 
     <div class="checkout-container animate-fade">
@@ -251,10 +251,10 @@ if (isset($_GET['id']) && $_GET['id'] > 0) {
                 return;
             }
 
-            // Create dynamic form to send to shipping page
+            // Create dynamic form to send to review page
             const form = document.createElement('form');
             form.method = 'POST';
-            form.action = 'checkout_shipping.php';
+            form.action = 'daftar_checkout.php';
 
             const input = document.createElement('input');
             input.type = 'hidden';

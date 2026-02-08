@@ -228,7 +228,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     <i class="fas fa-shopping-bag"></i>
                 </div>
                 <h1 class="auth-title">Login Pemesan</h1>
-                <p class="auth-subtitle">Selamat datang kembali di Luxury Shope</p>
+                <p class="auth-subtitle">Selamat datang kembali di PayBag</p>
 
                 <?php if ($error_message): ?>
                     <div class="alert alert-error">

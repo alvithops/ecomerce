@@ -54,7 +54,7 @@ $shipping_list = $stmt_shipping->fetchAll();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard | Luxury Shope</title>
+    <title>Dashboard | Pay Bag</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="assets/css/style.css">
@@ -267,7 +267,7 @@ $shipping_list = $stmt_shipping->fetchAll();
 
     <!-- Header -->
     <header class="header-main glass">
-        <div class="logo" style="font-weight: 600; font-size: 18px; color: var(--primary-main);">LuxuryShope</div>
+        <div class="logo" style="font-weight: 600; font-size: 18px; color: var(--primary-main);">PayBag</div>
         <div class="search-inner">
             <i class="fas fa-search" style="color: #999;"></i>
             <input type="text" placeholder="Cari 500+ produk mewah...">
