@@ -1,25 +1,16 @@
 <?php
 session_start();
 
-// Redirect if not admin
 if (!isset($_SESSION['admin_logged_in'])) {
-    header("Location: login.php");
+    header("Location: login_admin.php");
     exit();
 }
 
 /**
- * Simulasi Data Admin & Penjualan
+ * Simulasi Data Penjualan Admin
  */
-$admin_profile = [
-    'nama' => 'Chief Admin Luxury',
-    'bio' => 'Berpengalaman dalam manajemen e-commerce selama 10 tahun.',
-    'alamat' => 'Jakarta, Indonesia'
-];
-
-$sales_record = [
-    ['user' => 'Andi', 'item' => 'Laptop Z1', 'total' => 15000000, 'date' => '2023-10-01'],
-    ['user' => 'Budi', 'item' => 'Headphones', 'total' => 1200000, 'date' => '2023-10-02'],
-];
+$sales_sum = 125000000;
+$order_count = 1450;
 ?>
 
 <!DOCTYPE html>
@@ -28,403 +19,264 @@ $sales_record = [
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - Luxury Shope</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <title>Admin Dashboard | Luxury Shope</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="assets/css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        :root {
-            --primary-main: #90EE90;
-            --secondary-main: #ADD8E6;
-            --white: #ffffff;
-            --text-dark: #2c3e50;
-            --sidebar-width: 260px;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Outfit', sans-serif;
-        }
-
         body {
-            background-color: #f0f4f8;
-            overflow-x: hidden;
+            background: #f0f2f5;
+            display: flex;
+            min-height: 100vh;
+            overflow: hidden;
         }
 
-        /* Sidebar */
+        /* Sidebar Custom */
         .sidebar {
-            width: var(--sidebar-width);
+            width: 280px;
+            background: var(--white);
             height: 100vh;
-            background: linear-gradient(180deg, var(--white) 0%, #f9f9f9 100%);
-            position: fixed;
-            left: 0;
-            top: 0;
+            display: flex;
+            flex-direction: column;
             padding: 30px 20px;
-            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.05);
+            box-shadow: 10px 0 30px rgba(0, 0, 0, 0.03);
             z-index: 100;
         }
 
-        .sidebar-logo {
-            font-size: 24px;
-            font-weight: 600;
-            margin-bottom: 50px;
-            color: var(--text-dark);
-            text-align: center;
-        }
-
-        .sidebar-menu {
-            list-style: none;
-        }
-
-        .menu-item {
-            padding: 15px 20px;
-            margin-bottom: 10px;
+        .side-link {
+            padding: 14px 18px;
             border-radius: 12px;
-            cursor: pointer;
-            transition: 0.3s;
+            text-decoration: none;
+            color: #555;
             display: flex;
             align-items: center;
-            gap: 15px;
-            color: #777;
+            gap: 12px;
+            margin-bottom: 8px;
+            transition: var(--transition);
         }
 
-        .menu-item:hover {
+        .side-link:hover,
+        .side-link.active {
             background: var(--secondary-light);
-            color: var(--text-dark);
-        }
-
-        .menu-item i {
-            font-size: 18px;
-            width: 25px;
+            color: var(--secondary-main);
         }
 
         /* Main Content */
-        .main-content {
-            margin-left: var(--sidebar-width);
+        .admin-main {
+            flex: 1;
+            height: 100vh;
+            overflow-y: auto;
             padding: 40px;
-            min-height: 100vh;
         }
 
-        .welcome-card {
-            background: linear-gradient(to right, var(--primary-main), var(--secondary-main));
-            padding: 40px;
-            border-radius: 30px;
-            color: var(--text-dark);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
             margin-bottom: 40px;
         }
 
-        .info-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 20px;
-        }
-
-        .info-box {
+        .stat-card {
             background: white;
-            padding: 30px;
+            padding: 25px;
             border-radius: 20px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.02);
+            box-shadow: var(--shadow-soft);
+            border-bottom: 4px solid var(--primary-main);
         }
 
-        .info-box h3 {
-            margin-bottom: 15px;
-            color: var(--text-dark);
-            font-size: 18px;
-            border-bottom: 2px solid var(--primary-main);
-            display: inline-block;
+        .vision-card {
+            background: white;
+            padding: 40px;
+            border-radius: 24px;
+            box-shadow: var(--shadow-medium);
         }
 
-        /* Modals (Rooms) */
-        .modal-overlay {
+        /* Admin Overlay */
+        .admin-modal-overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.4);
             backdrop-filter: blur(15px);
+            z-index: 2000;
             display: none;
             justify-content: center;
             align-items: center;
-            z-index: 1000;
+            padding: 30px;
         }
 
-        .modal-content {
+        .admin-modal {
             background: white;
-            padding: 40px;
+            width: 100%;
+            max-width: 900px;
             border-radius: 24px;
-            width: 90%;
-            max-width: 800px;
-            max-height: 85vh;
+            padding: 40px;
+            box-shadow: var(--shadow-medium);
+            max-height: 90vh;
             overflow-y: auto;
-            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.1);
             position: relative;
-        }
-
-        .close-modal {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            font-size: 24px;
-            cursor: pointer;
-            color: #999;
-        }
-
-        /* Charts */
-        .chart-container {
-            height: 300px;
-            margin-top: 20px;
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .sidebar {
-                width: 70px;
-                padding: 20px 10px;
-            }
-
-            .sidebar-logo,
-            .menu-item span {
-                display: none;
-            }
-
-            .main-content {
-                margin-left: 70px;
-                padding: 20px;
-            }
-
-            .info-grid {
-                grid-template-columns: 1fr;
-            }
         }
     </style>
 </head>
 
 <body>
 
-    <!-- Sidebar -->
-    <div class="sidebar">
-        <div class="sidebar-logo">ADMIN</div>
-        <ul class="sidebar-menu">
-            <li class="menu-item" onclick="openModal('profileModal')">
-                <i class="fas fa-user-tie"></i> <span>Profile Admin</span>
-            </li>
-            <li class="menu-item" onclick="openModal('salesModal')">
-                <i class="fas fa-chart-line"></i> <span>Info Penjualan</span>
-            </li>
-            <li class="menu-item" onclick="openModal('chatModal')">
-                <i class="fas fa-comments"></i> <span>Chat</span>
-            </li>
-            <li class="menu-item" onclick="openModal('productModal')">
-                <i class="fas fa-box-open"></i> <span>Setting Produk</span>
-            </li>
-            <li class="menu-item" onclick="openModal('announcementModal')">
-                <i class="fas fa-bullhorn"></i> <span>Pengumuman</span>
-            </li>
-            <li class="menu-item" style="margin-top: 50px; color: #e74c3c;" onclick="location.href='logout.php'">
-                <i class="fas fa-sign-out-alt"></i> <span>Logout</span>
-            </li>
-        </ul>
-    </div>
-
-    <!-- Main Content -->
-    <div class="main-content">
-        <div class="welcome-card">
-            <h1>Selamat Datang, Admin!</h1>
-            <p>Kelola ekosistem Luxury Shope dengan bijaksana.</p>
+    <aside class="sidebar">
+        <div
+            style="font-size: 24px; font-weight: 600; color: var(--secondary-main); margin-bottom: 40px; display: flex; align-items: center; gap: 10px;">
+            <i class="fas fa-shield-alt"></i> Panel Admin
         </div>
 
-        <div class="info-grid">
-            <div class="info-box">
-                <h3>Visi & Misi</h3>
-                <p><strong>Visi:</strong> Menjadi platform e-commerce termewah di Asia.</p>
-                <p><strong>Misi:</strong> Memberikan pelayanan eksklusif dan produk berkualitas tinggi bagi setiap
-                    pelanggan.</p>
+        <a href="#" class="side-link active"><i class="fas fa-chart-line"></i> Dashboard</a>
+        <a href="javascript:void(0)" onclick="openAdminModal('profile')" class="side-link"><i
+                class="fas fa-user-circle"></i> Profile Admin</a>
+        <a href="javascript:void(0)" onclick="openAdminModal('sales')" class="side-link"><i class="fas fa-receipt"></i>
+            Info Penjualan</a>
+        <a href="javascript:void(0)" onclick="openAdminModal('chat')" class="side-link"><i class="fas fa-comments"></i>
+            Chat Pelanggan</a>
+        <a href="javascript:void(0)" onclick="openAdminModal('product')" class="side-link"><i class="fas fa-boxes"></i>
+            Setting Produk</a>
+        <a href="javascript:void(0)" onclick="openAdminModal('promo')" class="side-link"><i class="fas fa-bullhorn"></i>
+            Pengumuman</a>
+
+        <div style="margin-top: auto;">
+            <a href="logout.php" class="side-link" style="color: #ff4757;"><i class="fas fa-sign-out-alt"></i>
+                Keluar</a>
+        </div>
+    </aside>
+
+    <main class="admin-main animate-fade">
+        <div class="stat-grid">
+            <div class="stat-card animate-up" style="animation-delay: 0.1s;">
+                <div style="color: #999; font-size: 14px;">Total Omzet</div>
+                <div style="font-size: 24px; font-weight: 700; margin-top: 5px;">Rp 125,0jt</div>
             </div>
-            <div class="info-box">
-                <h3>Prestasi & Sertifikasi</h3>
-                <p><i class="fas fa-trophy" style="color:#f1c40f"></i> Best Luxury App 2023</p>
-                <p><i class="fas fa-certificate" style="color:#3498db"></i> ISO 9001:2015 Trusted Seller</p>
+            <div class="stat-card animate-up" style="animation-delay: 0.2s;">
+                <div style="color: #999; font-size: 14px;">Pesanan Baru</div>
+                <div style="font-size: 24px; font-weight: 700; margin-top: 5px;">+12 Pesanan</div>
+            </div>
+            <div class="stat-card animate-up" style="animation-delay: 0.3s;">
+                <div style="color: #999; font-size: 14px;">Rating Website</div>
+                <div style="font-size: 24px; font-weight: 700; margin-top: 5px;">4.9 / 5.0</div>
             </div>
         </div>
-    </div>
 
-    <!-- MODALS -->
-
-    <!-- Profile Admin -->
-    <div class="modal-overlay" id="profileModal">
-        <div class="modal-content">
-            <i class="fas fa-times close-modal" onclick="closeModal('profileModal')"></i>
-            <h2>Profil Admin</h2>
-            <div style="display:flex; gap:30px; margin-top:20px; align-items:center;">
-                <div
-                    style="width:120px; height:120px; background:#eee; border-radius:50%; display:flex; justify-content:center; align-items:center; font-size:40px;">
-                    <i class="fas fa-user-shield"></i>
+        <div class="vision-card animate-up">
+            <h2 style="margin-bottom: 25px; border-left: 5px solid var(--primary-main); padding-left: 15px;">Visi & Misi
+                Perusahaan</h2>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px;">
+                <div>
+                    <h4 style="color: var(--primary-main); margin-bottom: 10px;">Visi</h4>
+                    <p style="color: #555; text-align: justify; font-size: 15px;">Menjadi platform e-commerce nomor satu
+                        yang menyediakan barang-barang mewah dengan aksesibilitas termudah bagi seluruh lapisan
+                        masyarakat di Indonesia.</p>
                 </div>
                 <div>
-                    <h3>
-                        <?php echo $admin_profile['nama']; ?>
-                    </h3>
-                    <p style="color:#777;">
-                        <?php echo $admin_profile['alamat']; ?>
-                    </p>
-                    <p style="margin-top:10px;">
-                        <?php echo $admin_profile['bio']; ?>
-                    </p>
+                    <h4 style="color: var(--secondary-main); margin-bottom: 10px;">Misi</h4>
+                    <ul style="color: #555; font-size: 15px; padding-left: 20px;">
+                        <li>Menjamin keaslian setiap produk premium yang dijual.</li>
+                        <li>Memberikan pengalaman belanja berbasis teknologi mutakhir.</li>
+                        <li>Membangun ekosistem jual beli yang transparan dan aman.</li>
+                    </ul>
                 </div>
             </div>
-        </div>
-    </div>
 
-    <!-- Info Penjualan -->
-    <div class="modal-overlay" id="salesModal">
-        <div class="modal-content" style="max-width: 900px;">
-            <i class="fas fa-times close-modal" onclick="closeModal('salesModal')"></i>
-            <h2>Informasi Penjualan</h2>
-
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px; margin-top:20px;">
-                <div class="info-box">
-                    <h4>Grafik Keuntungan</h4>
-                    <div class="chart-container">
-                        <canvas id="profitChart"></canvas>
-                    </div>
-                </div>
-                <div class="info-box">
-                    <h4>Record Penjualan</h4>
-                    <table style="width:100%; border-collapse:collapse; margin-top:10px; font-size:14px;">
-                        <tr style="border-bottom:2px solid #eee;">
-                            <th align="left">Pembeli</th>
-                            <th align="left">Produk</th>
-                            <th align="left">Total</th>
-                        </tr>
-                        <?php foreach ($sales_record as $row): ?>
-                            <tr style="border-bottom:1px solid #eee;">
-                                <td style="padding:10px 0;">
-                                    <?php echo $row['user']; ?>
-                                </td>
-                                <td>
-                                    <?php echo $row['item']; ?>
-                                </td>
-                                <td>Rp
-                                    <?php echo number_format($row['total'], 0, ',', '.'); ?>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Product Settings -->
-    <div class="modal-overlay" id="productModal">
-        <div class="modal-content">
-            <i class="fas fa-times close-modal" onclick="closeModal('productModal')"></i>
-            <h2>Setting Produk</h2>
-            <div style="margin-top: 20px;">
-                <div class="menu-item" style="border: 1px solid #eee; display:flex; justify-content:space-between;">
-                    <div style="display:flex; align-items:center; gap:15px;">
-                        <div style="width:50px; height:50px; background:#ddd; border-radius:8px;"></div>
-                        <div>
-                            <strong>Premium Gaming Laptop Z1</strong>
-                            <p style="font-size:12px; color:#777;">Stok saat ini: 15</p>
-                        </div>
-                    </div>
-                    <div style="display:flex; gap:10px;">
-                        <button
-                            style="padding:5px 10px; border-radius:5px; border:1px solid #ddd; background:#fff;">Edit
-                            Stok</button>
-                        <button
-                            style="padding:5px 10px; border-radius:5px; border:none; background:#ff4757; color:#fff;">Stok
-                            Habis</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Announcement -->
-    <div class="modal-overlay" id="announcementModal">
-        <div class="modal-content">
-            <i class="fas fa-times close-modal" onclick="closeModal('announcementModal')"></i>
-            <h2>Kirim Pengumuman</h2>
-            <form style="margin-top:20px;">
-                <div style="margin-bottom:15px;">
-                    <label style="display:block; margin-bottom:5px;">Judul Notifikasi</label>
-                    <input type="text" style="width:100%; padding:12px; border-radius:8px; border:1px solid #ddd;"
-                        placeholder="Contoh: Diskon Gajian!">
-                </div>
-                <div style="margin-bottom:15px;">
-                    <label style="display:block; margin-bottom:5px;">Pesan</label>
-                    <textarea style="width:100%; padding:12px; border-radius:8px; border:1px solid #ddd;" rows="4"
-                        placeholder="Masukkan isi pesan pengumuman..."></textarea>
-                </div>
-                <button type="button" class="welcome-card"
-                    style="width:100%; border:none; padding:15px; cursor:pointer;"
-                    onclick="alert('Pengumuman terkirim ke semua pemesan!'); closeModal('announcementModal')">Kirim
-                    Sekarang</button>
-            </form>
-        </div>
-    </div>
-
-    <!-- Chat Modal -->
-    <div class="modal-overlay" id="chatModal">
-        <div class="modal-content">
-            <i class="fas fa-times close-modal" onclick="closeModal('chatModal')"></i>
-            <h2>Chat dengan Pemesan</h2>
-            <div
-                style="height:300px; background:#f9f9f9; margin-top:20px; border-radius:12px; padding:20px; overflow-y:auto; border:1px solid #eee;">
+            <h4 style="margin: 40px 0 20px; color: #333;">Prestasi & Sertifikasi</h4>
+            <div style="display: flex; gap: 15px;">
                 <div
-                    style="background:var(--primary-light); padding:10px 15px; border-radius:15px 15px 15px 0; max-width:70%; margin-bottom:15px;">
-                    <small>Andi:</small>
-                    <p>Halo admin, apakah stok laptopnya masih ada?</p>
+                    style="padding: 15px; border-radius: 12px; background: #fff8e1; border: 1px solid #ffe082; display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-trophy" style="color: #ffa000;"></i>
+                    <span style="font-size: 13px; font-weight: 600;">Best UI/UX Award 2025</span>
                 </div>
                 <div
-                    style="background:var(--secondary-light); padding:10px 15px; border-radius:15px 15px 0 15px; max-width:70%; margin-left:auto; margin-bottom:15px; text-align:right;">
-                    <small>Admin:</small>
-                    <p>Halo kak Andi, stok masih ada ya. Silakan diorder :)</p>
+                    style="padding: 15px; border-radius: 12px; background: #e8f5e9; border: 1px solid #a5d6a7; display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-certificate" style="color: #2e7d32;"></i>
+                    <span style="font-size: 13px; font-weight: 600;">ISO 27001 - Security</span>
                 </div>
             </div>
-            <div style="display:flex; gap:10px; margin-top:15px;">
-                <input type="text" style="flex:1; padding:12px; border-radius:8px; border:1px solid #ddd;"
-                    placeholder="Balas chat...">
-                <button style="padding:10px 20px; border-radius:8px; border:none; background:var(--primary-main);"><i
-                        class="fas fa-paper-plane"></i></button>
-            </div>
+        </div>
+    </main>
+
+    <!-- Admin Overlay Modals -->
+    <div id="adminOverlay" class="admin-modal-overlay">
+        <div class="admin-modal animate-up">
+            <button onclick="closeAdminModal()"
+                style="position: absolute; top: 20px; right: 20px; border: none; background: #eee; width: 35px; height: 35px; border-radius: 50%; cursor: pointer;"><i
+                    class="fas fa-times"></i></button>
+            <div id="modalContent"></div>
         </div>
     </div>
 
     <script>
-        function openModal(id) {
-            document.getElementById(id).style.display = 'flex';
-            if (id === 'salesModal') initChart();
+        function openAdminModal(type) {
+            const overlay = document.getElementById('adminOverlay');
+            const content = document.getElementById('modalContent');
+            overlay.style.display = 'flex';
+
+            if (type === 'sales') {
+                content.innerHTML = `
+                    <h2 style="margin-bottom: 25px;">Statistik Penjualan</h2>
+                    <canvas id="salesChart" style="width: 100%; height: 300px;"></canvas>
+                    <div style="margin-top: 30px;">
+                        <h4>Penjualan Terakhir</h4>
+                        <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+                            <tr style="background: #f8f9fa; font-size: 14px;">
+                                <th style="padding: 12px; text-align: left;">ID Pesanan</th>
+                                <th style="padding: 12px; text-align: left;">Pemesan</th>
+                                <th style="padding: 12px; text-align: left;">Status</th>
+                                <th style="padding: 12px; text-align: right;">Total</th>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #eee; font-size: 13px;">
+                                <td style="padding: 12px;">#ORD-772</td>
+                                <td style="padding: 12px;">Andi Pratama</td>
+                                <td style="padding: 12px;"><span style="color: #ffa000;">Dikemas</span></td>
+                                <td style="padding: 12px; text-align: right;">Rp 12,5jt</td>
+                            </tr>
+                        </table>
+                    </div>
+                `;
+                initChart();
+            } else if (type === 'profile') {
+                content.innerHTML = `
+                    <h2 style="margin-bottom: 25px;">Profile Administrator</h2>
+                    <div style="display: flex; gap: 30px;">
+                        <img src="https://i.pravatar.cc/150?u=admin" style="width: 150px; height: 150px; border-radius: 20px; object-fit: cover;">
+                        <div>
+                            <p><strong>Nama:</strong> Admin Pak Payung</p>
+                            <p><strong>Username:</strong> payung</p>
+                            <p><strong>Peran:</strong> Senior Backend Owner</p>
+                            <p><strong>Alamat:</strong> Jakarta Pusat, Indonesia</p>
+                        </div>
+                    </div>
+                `;
+            } else if (type === 'product') {
+                content.innerHTML = `<h2>Kelola Stok Produk</h2><p>Pilih produk untuk mengedit stok atau menandai stok habis.</p>`;
+            } else {
+                content.innerHTML = `<h2>Panel ${type.charAt(0).toUpperCase() + type.slice(1)}</h2><p>Data sedang dimuat...</p>`;
+            }
         }
 
-        function closeModal(id) {
-            document.getElementById(id).style.display = 'none';
+        function closeAdminModal() {
+            document.getElementById('adminOverlay').style.display = 'none';
         }
 
         function initChart() {
-            const ctx = document.getElementById('profitChart').getContext('2d');
+            const ctx = document.getElementById('salesChart').getContext('2d');
             new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'],
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun'],
                     datasets: [{
-                        label: 'Keuntungan (Juta Rupiah)',
-                        data: [12, 19, 3, 5, 2, 3, 10],
+                        label: 'Keuntungan (Juta)',
+                        data: [50, 80, 45, 120, 95, 125],
                         borderColor: '#90EE90',
                         backgroundColor: 'rgba(144, 238, 144, 0.2)',
                         fill: true,
                         tension: 0.4
                     }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false
                 }
             });
         }

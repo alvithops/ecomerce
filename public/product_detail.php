@@ -1,33 +1,27 @@
 <?php
+require_once 'inc/db.php';
 session_start();
 
-if (!isset($_SESSION['logged_in_user'])) {
-    header("Location: login.php");
+if (!isset($_SESSION['user_id'])) {
+    header("Location: login_pemesan.php");
     exit();
 }
 
-/**
- * Simulasi Data Produk (Sama dengan dashboard.php)
- */
-$products = [
-    1 => [
-        'name' => 'Premium Gaming Laptop Z1',
-        'price' => 15000000,
-        'discount' => '20%',
-        'image' => 'https://images.unsplash.com/photo-1603302576837-37561b2e2302?auto=format&fit=crop&w=600&q=80',
-        'rating' => 4.8,
-        'video' => 'https://www.w3schools.com/html/mov_bbb.mp4',
-        'desc' => 'Laptop gaming dengan performa tinggi, processor i9 generasi terbaru, dan kartu grafis RTX 4090. Sangat mewah dan elegan.',
-        'reviews' => [
-            ['user' => 'Andi', 'msg' => 'Gila mancep banget!', 'rating' => 5],
-            ['user' => 'Budi', 'msg' => 'Harganya sebanding dengan kualitas.', 'rating' => 4]
-        ]
-    ],
-    // ... data lainnya bisa ditambahkan
-];
+$product_id = $_GET['id'] ?? 0;
 
-$id = $_GET['id'] ?? 1;
-$product = $products[$id] ?? $products[1];
+// Fetch Product Details
+$stmt = $pdo->prepare("SELECT * FROM products WHERE id = ?");
+$stmt->execute([$product_id]);
+$product = $stmt->fetch();
+
+if (!$product) {
+    die("Produk tidak ditemukan.");
+}
+
+// Fetch Reviews
+$stmt = $pdo->prepare("SELECT r.*, u.nama_pengguna FROM reviews r JOIN users u ON r.user_id = u.id WHERE r.product_id = ? ORDER BY r.created_at DESC");
+$stmt->execute([$product_id]);
+$reviews = $stmt->fetchAll();
 ?>
 
 <!DOCTYPE html>
@@ -36,299 +30,250 @@ $product = $products[$id] ?? $products[1];
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>
-        <?php echo $product['name']; ?> - Detail Produk
-    </title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <title><?= $product['name'] ?> | Luxury Shope</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="assets/css/style.css">
     <style>
-        :root {
-            --primary-light: #D0F0C0;
-            --secondary-light: #E0F7FA;
-            --primary-main: #90EE90;
-            --secondary-main: #ADD8E6;
-            --white: #ffffff;
-            --text-dark: #2c3e50;
-            --bg-gray: #f8f9fa;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Outfit', sans-serif;
-        }
-
         body {
-            background-color: var(--bg-gray);
+            background: #fff;
             padding-bottom: 90px;
         }
 
-        .top-nav {
+        .top-action {
             position: fixed;
             top: 0;
             width: 100%;
-            padding: 15px;
+            padding: 15px 20px;
             display: flex;
             justify-content: space-between;
             z-index: 1000;
         }
 
-        .back-btn {
-            background: rgba(0, 0, 0, 0.3);
-            color: white;
+        .back-circle {
             width: 40px;
             height: 40px;
+            background: rgba(0, 0, 0, 0.4);
+            color: white;
             border-radius: 50%;
             display: flex;
             justify-content: center;
             align-items: center;
             text-decoration: none;
+            backdrop-filter: blur(5px);
         }
 
-        .product-img {
+        .product-hero {
             width: 100%;
             height: 400px;
-            background: #fff;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            overflow: hidden;
+            position: relative;
+            background: #eee;
         }
 
-        .product-img img {
+        .product-hero img {
             width: 100%;
             height: 100%;
             object-fit: cover;
         }
 
-        .container {
-            padding: 20px;
+        .content-main {
             background: white;
-            border-radius: 24px 24px 0 0;
+            border-radius: var(--radius-lg) var(--radius-lg) 0 0;
             margin-top: -30px;
             position: relative;
+            padding: 25px;
+            min-height: 500px;
         }
 
-        .price-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-
-        .price {
-            font-size: 24px;
-            font-weight: 600;
+        .price-badge {
+            font-size: 28px;
+            font-weight: 700;
             color: #ff4757;
-        }
-
-        .action-btns {
-            display: flex;
-            gap: 15px;
-        }
-
-        .action-btn {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            border: none;
-            background: #f0f0f0;
-            cursor: pointer;
-            transition: 0.3s;
-        }
-
-        .action-btn.active-like {
-            color: #ff4757;
-            background: #ffebeb;
-        }
-
-        .action-btn.active-save {
-            color: #2ecc71;
-            background: #eaffea;
-        }
-
-        .p-name {
-            font-size: 20px;
-            font-weight: 600;
             margin-bottom: 10px;
         }
 
-        .p-stats {
+        .stats-row {
             display: flex;
+            align-items: center;
             gap: 15px;
             font-size: 13px;
             color: #777;
             margin-bottom: 20px;
         }
 
-        .video-section {
-            margin: 20px 0;
+        .action-float {
+            display: flex;
+            gap: 12px;
+        }
+
+        .floating-btn {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            border: none;
+            background: #f8f9fa;
+            color: #555;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .floating-btn.active-like {
+            color: #ff4757;
+            background: #fff1f2;
+        }
+
+        .floating-btn.active-save {
+            color: #2ecc71;
+            background: #f0fdf4;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin: 25px 0 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        /* Video Section */
+        .video-box {
+            width: 100%;
+            height: 210px;
+            background: #000;
             border-radius: 12px;
             overflow: hidden;
-            background: black;
+            margin-bottom: 25px;
         }
 
-        .review-card {
-            padding: 15px;
-            background: #f9f9f9;
-            border-radius: 12px;
-            margin-bottom: 10px;
-        }
-
-        /* Bottom Control Bar */
-        .bottom-bar {
+        /* Bottom Bar */
+        .bottom-checkout {
             position: fixed;
             bottom: 0;
             width: 100%;
             background: white;
             padding: 15px 20px;
+            box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.05);
             display: flex;
             align-items: center;
             gap: 15px;
-            box-shadow: 0 -5px 15px rgba(0, 0, 0, 0.05);
             z-index: 1000;
         }
 
-        .quantity-control {
+        .qty-picker {
             display: flex;
             align-items: center;
-            background: #f0f0f0;
-            border-radius: 20px;
-            padding: 5px 15px;
+            background: #f1f1f1;
+            padding: 8px 15px;
+            border-radius: 30px;
             gap: 15px;
+            font-weight: 600;
         }
 
-        .qty-btn {
+        .qty-picker button {
             border: none;
             background: none;
             font-size: 18px;
             cursor: pointer;
-        }
-
-        .buy-now {
-            flex: 1;
-            padding: 14px;
-            background: linear-gradient(to right, var(--primary-main), var(--secondary-main));
-            border: none;
-            border-radius: 12px;
-            color: var(--text-dark);
-            font-weight: 600;
-            cursor: pointer;
-        }
-
-        .msg-btn {
-            width: 50px;
-            height: 50px;
-            background: #f0f0f0;
-            border: none;
-            border-radius: 12px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            color: #777;
-            cursor: pointer;
+            color: #555;
         }
     </style>
 </head>
 
 <body>
 
-    <nav class="top-nav">
-        <a href="dashboard.php" class="back-btn"><i class="fas fa-arrow-left"></i></a>
-        <a href="#" class="back-btn"><i class="fas fa-share-alt"></i></a>
-    </nav>
-
-    <div class="product-img">
-        <img src="<?php echo $product['image']; ?>" alt="">
+    <div class="top-action">
+        <a href="dashboard.php" class="back-circle"><i class="fas fa-arrow-left"></i></a>
+        <a href="#" class="back-circle"><i class="fas fa-share-alt"></i></a>
     </div>
 
-    <div class="container">
-        <div class="price-row">
-            <div class="price">Rp
-                <?php echo number_format($product['price'], 0, ',', '.'); ?>
+    <div class="product-hero animate-fade">
+        <img src="<?= $product['image_url'] ?>" alt="<?= $product['name'] ?>">
+    </div>
+
+    <div class="content-main animate-up">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div>
+                <div class="price-badge">Rp <?= number_format($product['price'], 0, ',', '.') ?></div>
+                <h1 style="font-size: 22px; font-weight: 600;"><?= $product['name'] ?></h1>
             </div>
-            <div class="action-btns">
-                <button class="action-btn" id="likeBtn" onclick="toggleAction('like')"><i
+            <div class="action-float">
+                <button id="likeBtn" class="floating-btn" onclick="toggleAction('like')"><i
                         class="fas fa-heart"></i></button>
-                <button class="action-btn" id="saveBtn" onclick="toggleAction('save')"><i
+                <button id="saveBtn" class="floating-btn" onclick="toggleAction('save')"><i
                         class="fas fa-bookmark"></i></button>
             </div>
         </div>
 
-        <h1 class="p-name">
-            <?php echo $product['name']; ?>
-        </h1>
-
-        <div class="p-stats">
-            <span><i class="fas fa-star" style="color:#f1c40f"></i>
-                <?php echo $product['rating']; ?>
-            </span>
+        <div class="stats-row">
+            <span><i class="fas fa-star" style="color: #f1c40f;"></i> <?= $product['rating'] ?></span>
             <span>| 1.2k Terjual</span>
-            <span>| 450 Ulasan</span>
+            <span>| <?= count($reviews) ?> Ulasan</span>
         </div>
 
-        <div style="border-top: 1px solid #eee; padding-top: 15px;">
-            <h3 style="font-size: 16px; margin-bottom: 10px;">Deskripsi Produk</h3>
-            <p style="font-size: 14px; color: #555; line-height: 1.6;">
-                <?php echo $product['desc']; ?>
-            </p>
-        </div>
+        <div class="section-title">Deskripsi Produk</div>
+        <p style="color: #555; text-align: justify; font-size: 14px; line-height: 1.8;">
+            <?= $product['description'] ?>
+        </p>
 
-        <div class="video-section">
-            <video width="100%" controls>
-                <source src="<?php echo $product['video']; ?>" type="video/mp4">
-            </video>
-        </div>
+        <?php if ($product['video_url']): ?>
+            <div class="section-title">Video Produk</div>
+            <div class="video-box">
+                <video src="<?= $product['video_url'] ?>" style="width: 100%; height: 100%;" controls></video>
+            </div>
+        <?php endif; ?>
 
-        <h3>Ulasan Pemesan</h3>
-        <div style="margin-top: 15px;">
-            <?php foreach ($product['reviews'] as $rev): ?>
-                <div class="review-card">
-                    <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
-                        <strong>
-                            <?php echo $rev['user']; ?>
-                        </strong>
-                        <div style="color:#f1c40f">
-                            <?php for ($i = 0; $i < $rev['rating']; $i++)
+        <div class="section-title">Ulasan Pemesan</div>
+        <?php if (empty($reviews)): ?>
+            <p style="color: #999; font-size: 13px;">Belum ada ulasan untuk produk ini.</p>
+        <?php else: ?>
+            <?php foreach ($reviews as $r): ?>
+                <div
+                    style="background: #fdfdfd; padding: 15px; border-radius: 12px; margin-bottom: 12px; border: 1px solid #f1f1f1;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                        <strong><?= htmlspecialchars($r['nama_pengguna']) ?></strong>
+                        <div style="color: #f1c40f; font-size: 12px;">
+                            <?php for ($i = 0; $i < $r['rating']; $i++)
                                 echo '<i class="fas fa-star"></i>'; ?>
                         </div>
                     </div>
-                    <p style="font-size:13px; color:#666;">
-                        <?php echo $rev['msg']; ?>
-                    </p>
+                    <p style="font-size: 13px; color: #555;"><?= htmlspecialchars($r['comment']) ?></p>
+                    <span style="font-size: 10px; color: #999; display: block; margin-top: 8px;"><?= $r['created_at'] ?></span>
                 </div>
             <?php endforeach; ?>
-        </div>
+        <?php endif; ?>
     </div>
 
-    <div class="bottom-bar">
-        <button class="msg-btn" onclick="location.href='chat.php'"><i class="fas fa-comment-dots"></i></button>
-        <div class="quantity-control">
-            <button class="qty-btn" onclick="changeQty(-1)">-</button>
-            <span id="qty">1</span>
-            <button class="qty-btn" onclick="changeQty(1)">+</button>
+    <div class="bottom-checkout animate-up">
+        <button class="btn glass" onclick="location.href='chat.php'" style="padding: 12px;"><i
+                class="fas fa-comment-dots"></i></button>
+        <div class="qty-picker">
+            <button onclick="changeQty(-1)">-</button>
+            <span id="qtyVal">1</span>
+            <button onclick="changeQty(1)">+</button>
         </div>
-        <button class="buy-now"
-            onclick="location.href='checkout.php?id=<?php echo $id; ?>&qty='+document.getElementById('qty').innerText">Beli
-            Sekarang</button>
+        <button class="btn btn-primary" style="flex: 1;" onclick="buyNow()">Beli Sekarang</button>
     </div>
 
     <script>
         function toggleAction(type) {
             const btn = document.getElementById(type + 'Btn');
             btn.classList.toggle('active-' + type);
-            // In real app, this would send an AJAX request to server
-            if (btn.classList.contains('active-' + type)) {
-                alert('Produk berhasil di' + (type === 'like' ? 'sukai' : 'simpan') + '!');
-            }
+            // In a real app, send AJAX log
         }
 
         function changeQty(n) {
-            let qty = parseInt(document.getElementById('qty').innerText);
-            qty += n;
-            if (qty < 1) qty = 1;
-            document.getElementById('qty').innerText = qty;
+            let val = parseInt(document.getElementById('qtyVal').innerText);
+            val += n;
+            if (val < 1) val = 1;
+            document.getElementById('qtyVal').innerText = val;
+        }
+
+        function buyNow() {
+            const qty = document.getElementById('qtyVal').innerText;
+            location.href = `checkout.php?id=<?= $product_id ?>&qty=${qty}`;
         }
     </script>
 </body>

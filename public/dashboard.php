@@ -1,67 +1,21 @@
 <?php
+require_once 'inc/db.php';
 session_start();
 
-// Redirect if not logged in
-if (!isset($_SESSION['logged_in_user'])) {
-    header("Location: login.php");
+if (!isset($_SESSION['user_id'])) {
+    header("Location: login_pemesan.php");
     exit();
 }
 
-$user = $_SESSION['logged_in_user'];
+$user_id = $_SESSION['user_id'];
+$user_nama = $_SESSION['user_nama'] ?? 'User';
 
-/**
- * Simulasi Data Produk
- */
-$products = [
-    [
-        'id' => 1,
-        'name' => 'Premium Gaming Laptop Z1',
-        'price' => 15000000,
-        'discount' => '20%',
-        'image' => 'https://images.unsplash.com/photo-1603302576837-37561b2e2302?auto=format&fit=crop&w=300&q=80',
-        'rating' => 4.8
-    ],
-    [
-        'id' => 2,
-        'name' => 'Wireless Headphones Noise-X',
-        'price' => 1200000,
-        'discount' => '10%',
-        'image' => 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=300&q=80',
-        'rating' => 4.5
-    ],
-    [
-        'id' => 3,
-        'name' => 'Smartwatch Series 7 Luxury',
-        'price' => 3500000,
-        'discount' => null,
-        'image' => 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=300&q=80',
-        'rating' => 4.6
-    ],
-    [
-        'id' => 4,
-        'name' => 'Ergonomic Desk Chair Pro',
-        'price' => 2500000,
-        'discount' => '15%',
-        'image' => 'https://images.unsplash.com/photo-1505843490701-515a007bc0c5?auto=format&fit=crop&w=300&q=80',
-        'rating' => 4.9
-    ],
-    [
-        'id' => 5,
-        'name' => 'Mechanical Keyboard RGB',
-        'price' => 850000,
-        'discount' => '5%',
-        'image' => 'https://images.unsplash.com/photo-1511467687858-23d96c32e4ae?auto=format&fit=crop&w=300&q=80',
-        'rating' => 4.7
-    ],
-    [
-        'id' => 6,
-        'name' => '4K Ultra Slim Monitor 27"',
-        'price' => 4200000,
-        'discount' => null,
-        'image' => 'https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?auto=format&fit=crop&w=300&q=80',
-        'rating' => 4.4
-    ],
-];
+// Fetch Products from Database
+$stmt = $pdo->query("SELECT * FROM products ORDER BY created_at DESC");
+$products = $stmt->fetchAll();
+
+// Simulated notifications count
+$notif_count = 3;
 ?>
 
 <!DOCTYPE html>
@@ -70,428 +24,324 @@ $products = [
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - Luxury Shope</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <title>Dashboard | Luxury Shope</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="assets/css/style.css">
     <style>
-        :root {
-            --primary-light: #D0F0C0;
-            --secondary-light: #E0F7FA;
-            --primary-main: #90EE90;
-            --secondary-main: #ADD8E6;
-            --white: #ffffff;
-            --text-dark: #2c3e50;
-            --bg-gray: #f8f9fa;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Outfit', sans-serif;
-        }
-
         body {
-            background-color: var(--bg-gray);
-            padding-top: 70px;
-            /* Header space */
             padding-bottom: 80px;
-            /* Nav space */
-            color: var(--text-dark);
-            min-height: 100vh;
+            background: #fdfdfd;
         }
 
-        /* Header */
-        header {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            background: linear-gradient(to right, var(--primary-main), var(--secondary-main));
+        .header-main {
+            background: var(--white);
             padding: 15px 20px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: var(--shadow-soft);
             display: flex;
             justify-content: space-between;
             align-items: center;
-            z-index: 1000;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }
 
-        .header-logo {
-            font-weight: 600;
-            font-size: 20px;
-            color: var(--text-dark);
-        }
-
-        .search-container {
+        .search-inner {
+            background: #f1f1f1;
+            padding: 10px 15px;
+            border-radius: 30px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
             flex: 1;
-            margin: 0 20px;
+            margin: 0 15px;
+        }
+
+        .search-inner input {
+            border: none;
+            background: none;
+            outline: none;
+            width: 100%;
+            font-size: 14px;
+        }
+
+        /* Product Grid */
+        .product-container {
+            padding: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 15px;
+        }
+
+        .p-card {
+            background: var(--white);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            box-shadow: var(--shadow-soft);
+            transition: var(--transition);
+            text-decoration: none;
+            color: inherit;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .p-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-medium);
+        }
+
+        .p-img-box {
+            width: 100%;
+            height: 180px;
+            background: #f8f8f8;
             position: relative;
         }
 
-        .search-container input {
+        .p-img-box img {
             width: 100%;
-            padding: 10px 15px 10px 40px;
-            border-radius: 20px;
-            border: none;
-            outline: none;
-            background: rgba(255, 255, 255, 0.8);
+            height: 100%;
+            object-fit: cover;
         }
 
-        .search-container i {
+        .discount-tag {
             position: absolute;
-            left: 15px;
-            top: 50%;
-            transform: translateY(-50%);
+            top: 10px;
+            right: 10px;
+            background: #ff4757;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        .p-info {
+            padding: 12px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .p-name {
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 8px;
+            height: 40px;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+
+        .p-price {
+            font-size: 16px;
+            font-weight: 600;
+            color: #ff4757;
+        }
+
+        .p-rating {
+            font-size: 11px;
             color: #777;
+            margin-top: 5px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
         }
 
         /* Bottom Nav */
         .bottom-nav {
             position: fixed;
             bottom: 0;
-            left: 0;
             width: 100%;
-            background: white;
+            background: var(--white);
             display: flex;
             justify-content: space-around;
-            padding: 10px 0;
-            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+            padding: 12px 0;
+            box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.05);
             z-index: 1000;
         }
 
         .nav-item {
-            text-align: center;
-            color: #999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
             text-decoration: none;
+            color: #bdc3c7;
             font-size: 11px;
-            flex: 1;
-            transition: all 0.3s;
-        }
-
-        .nav-item i {
-            display: block;
-            font-size: 20px;
-            margin-bottom: 4px;
+            gap: 5px;
+            transition: var(--transition);
         }
 
         .nav-item.active {
             color: var(--primary-main);
         }
 
-        .nav-item.active i {
-            color: var(--primary-main);
+        .nav-item i {
+            font-size: 20px;
         }
 
-        /* Content Sections */
-        .content-section {
+        /* Section switcher */
+        .dashboard-section {
             display: none;
-            padding: 20px;
-            animation: fadeIn 0.4s ease;
         }
 
-        .content-section.active {
+        .dashboard-section.active {
             display: block;
-        }
-
-        /* Beranda Products */
-        .product-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-            gap: 15px;
-        }
-
-        .product-card {
-            background: white;
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
-            transition: transform 0.2s;
-            cursor: pointer;
-            position: relative;
-        }
-
-        .product-card:hover {
-            transform: translateY(-3px);
-        }
-
-        .product-img {
-            width: 100%;
-            height: 150px;
-            background-size: cover;
-            background-position: center;
-        }
-
-        .product-info {
-            padding: 10px;
-        }
-
-        .product-name {
-            font-size: 14px;
-            font-weight: 500;
-            margin-bottom: 5px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .product-price {
-            color: var(--primary-main);
-            font-weight: 600;
-            font-size: 15px;
-        }
-
-        .product-rating {
-            font-size: 12px;
-            color: #f1c40f;
-            margin-top: 5px;
-        }
-
-        .discount-tag {
-            position: absolute;
-            top: 10px;
-            right: 0;
-            background: #ff4757;
-            color: white;
-            padding: 2px 8px;
-            font-size: 11px;
-            font-weight: 600;
-            border-radius: 10px 0 0 10px;
-        }
-
-        /* Profile Styles */
-        .profile-header {
-            background: white;
-            padding: 30px;
-            border-radius: 20px;
-            text-align: center;
-            margin-bottom: 20px;
-        }
-
-        .profile-img {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            background: var(--secondary-light);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin: 0 auto 15px;
-            font-size: 30px;
-            color: var(--secondary-main);
-            border: 3px solid var(--primary-main);
-        }
-
-        .profile-menu {
-            background: white;
-            border-radius: 20px;
-            overflow: hidden;
-        }
-
-        .menu-item {
-            padding: 15px 20px;
-            display: flex;
-            align-items: center;
-            border-bottom: 1px solid #eee;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-
-        .menu-item:hover {
-            background: #f9f9f9;
-        }
-
-        .menu-item i {
-            width: 30px;
-            font-size: 18px;
-            color: #777;
-        }
-
-        .menu-item .menu-text {
-            flex: 1;
-            font-size: 15px;
-        }
-
-        /* Animations */
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        /* Responsive */
-        @media (min-width: 768px) {
-            .product-grid {
-                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-                gap: 25px;
-            }
-
-            .product-img {
-                height: 200px;
-            }
         }
     </style>
 </head>
 
 <body>
 
-    <header>
-        <div class="header-logo">LUXURY SHOPE</div>
-        <div class="search-container">
-            <i class="fas fa-search"></i>
-            <input type="text" placeholder="Cari barang mewah anda...">
+    <!-- Header -->
+    <header class="header-main glass">
+        <div class="logo" style="font-weight: 600; font-size: 18px; color: var(--primary-main);">LuxuryShope</div>
+        <div class="search-inner">
+            <i class="fas fa-search" style="color: #999;"></i>
+            <input type="text" placeholder="Cari di Luxury Shope...">
         </div>
-        <a href="logout.php" style="color: var(--text-dark);"><i class="fas fa-sign-out-alt"></i></a>
+        <div class="cart-icon" style="position: relative;">
+            <i class="fas fa-shopping-cart" style="font-size: 20px; color: #555;"></i>
+            <span
+                style="position: absolute; top: -10px; right: -10px; background: #ff4757; color: white; width: 18px; height: 18px; border-radius: 50%; font-size: 10px; display: flex; align-items: center; justify-content: center;">2</span>
+        </div>
     </header>
 
-    <!-- Menu Sections -->
-    <main id="mainContent">
-        <!-- BERANDA -->
-        <section id="beranda" class="content-section active">
-            <h3 style="margin-bottom: 15px;">Rekomendasi Produk</h3>
-            <div class="product-grid">
+    <!-- SECTION: BERANDA -->
+    <div id="beranda" class="dashboard-section active animate-fade">
+        <div class="banner" style="padding: 20px;">
+            <div
+                style="width: 100%; height: 150px; background: linear-gradient(to right, var(--primary-main), var(--secondary-main)); border-radius: var(--radius-md); padding: 25px; color: var(--text-dark);">
+                <h2 style="font-size: 20px;">Promo Gajian!</h2>
+                <p style="font-size: 14px; opacity: 0.8;">Diskon hingga 50% untuk produk premium.</p>
+                <button class="btn" style="background: white; margin-top: 15px; font-size: 12px;">Cek Sekarang</button>
+            </div>
+        </div>
+
+        <div class="product-container">
+            <?php if (empty($products)): ?>
+                <p style="grid-column: 1/-1; text-align: center; color: #999; padding: 40px;">Belum ada produk yang
+                    tersedia.</p>
+            <?php else: ?>
                 <?php foreach ($products as $p): ?>
-                    <div class="product-card" onclick="location.href='product_detail.php?id=<?php echo $p['id']; ?>'">
-                        <div class="product-img" style="background-image: url('<?php echo $p['image']; ?>')"></div>
-                        <?php if ($p['discount']): ?>
-                            <div class="discount-tag">
-                                <?php echo $p['discount']; ?> OFF
-                            </div>
-                        <?php endif; ?>
-                        <div class="product-info">
-                            <div class="product-name">
-                                <?php echo $p['name']; ?>
-                            </div>
-                            <div class="product-price">Rp
-                                <?php echo number_format($p['price'], 0, ',', '.'); ?>
-                            </div>
-                            <div class="product-rating">
-                                <i class="fas fa-star"></i>
-                                <?php echo $p['rating']; ?>
+                    <a href="product_detail.php?id=<?= $p['id'] ?>" class="p-card">
+                        <div class="p-img-box">
+                            <img src="<?= $p['image_url'] ?>" alt="<?= $p['name'] ?>">
+                            <?php if ($p['discount_percent'] > 0): ?>
+                                <span class="discount-tag"><?= $p['discount_percent'] ?>% OFF</span>
+                            <?php endif; ?>
+                        </div>
+                        <div class="p-info">
+                            <div class="p-name"><?= $p['name'] ?></div>
+                            <div class="p-price">Rp <?= number_format($p['price'], 0, ',', '.') ?></div>
+                            <div class="p-rating">
+                                <i class="fas fa-star" style="color: #f1c40f;"></i>
+                                <span><?= $p['rating'] ?> | Terjual 100+</span>
                             </div>
                         </div>
-                    </div>
+                    </a>
                 <?php endforeach; ?>
-            </div>
-        </section>
+            <?php endif; ?>
+        </div>
+    </div>
 
-        <!-- HISTORY -->
-        <section id="history" class="content-section">
-            <h3>Riwayat Pesanan</h3>
-            <div style="text-align: center; margin-top: 50px; color: #999;">
-                <i class="fas fa-receipt" style="font-size: 50px; margin-bottom: 15px; opacity: 0.5;"></i>
+    <!-- SECTION: RIWAYAT -->
+    <div id="riwayat" class="dashboard-section animate-fade">
+        <div style="padding: 20px;">
+            <h2>Histories Pemesanan</h2>
+            <div style="margin-top: 20px; color: #999; text-align: center; padding: 50px;">
+                <i class="fas fa-box-open" style="font-size: 50px; margin-bottom: 15px;"></i>
                 <p>Belum ada riwayat pesanan.</p>
             </div>
-        </section>
+        </div>
+    </div>
 
-        <!-- NOTIFICATION -->
-        <section id="notification" class="content-section">
-            <h3>Notifikasi</h3>
-            <div class="menu-item" style="border-radius: 12px; background: #fff; margin-bottom: 10px;">
-                <i class="fas fa-tag" style="color: #ff4757;"></i>
-                <div class="menu-text">
-                    <strong>Diskon Spesial!</strong>
-                    <p style="font-size: 12px; color: #777;">Dapatkan diskon 50% untuk laptop gaming.</p>
-                </div>
-            </div>
-            <div class="menu-item" style="border-radius: 12px; background: #fff; margin-bottom: 10px;">
-                <i class="fas fa-info-circle" style="color: var(--secondary-main);"></i>
-                <div class="menu-text">
-                    <strong>Info dari Admin</strong>
-                    <p style="font-size: 12px; color: #777;">Selamat bergabung di Luxury Shope.</p>
-                </div>
-            </div>
-        </section>
-
-        <!-- PROFILE -->
-        <section id="profile" class="content-section">
-            <div class="profile-header">
-                <div class="profile-img">
-                    <i class="fas fa-user"></i>
-                </div>
-                <h2>
-                    <?php echo htmlspecialchars($user['nama']); ?>
-                </h2>
-                <p style="color: #777; font-size: 14px;">@
-                    <?php echo htmlspecialchars($user['username']); ?>
+    <!-- SECTION: NOTIFIKASI -->
+    <div id="notif" class="dashboard-section animate-fade">
+        <div style="padding: 20px;">
+            <h2>Notifikasi</h2>
+            <div class="notif-item animate-up"
+                style="background:white; padding:15px; border-radius:12px; margin-top:15px; box-shadow: var(--shadow-soft);">
+                <strong>Promo Akhir Bulan!</strong>
+                <p style="font-size: 13px; color: #666; margin-top: 5px;">Dapatkan gratis ongkir ke seluruh Indonesia.
                 </p>
+                <span style="font-size: 10px; color: #999;">Baru saja</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- SECTION: PROFILE -->
+    <div id="profil" class="dashboard-section animate-fade">
+        <div style="padding: 20px; text-align: center;">
+            <div
+                style="width: 100px; height: 100px; background: #eee; border-radius: 50%; margin: 0 auto 15px; overflow: hidden; border: 4px solid var(--white); box-shadow: var(--shadow-medium);">
+                <img src="https://i.pravatar.cc/100" style="width: 100%;">
+            </div>
+            <h3><?= htmlspecialchars($user_nama) ?></h3>
+            <p style="font-size: 13px; color: #777;">ID: #<?= $user_id ?></p>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 30px;">
+                <div class="btn glass" style="flex-direction: column; padding: 20px;">
+                    <i class="fas fa-heart" style="color: #ff4757; font-size: 24px;"></i>
+                    <span style="font-size: 12px; margin-top: 5px; color: #555;">Suka</span>
+                </div>
+                <div class="btn glass" style="flex-direction: column; padding: 20px;">
+                    <i class="fas fa-bookmark" style="color: #2ecc71; font-size: 24px;"></i>
+                    <span style="font-size: 12px; margin-top: 5px; color: #555;">Simpan</span>
+                </div>
             </div>
 
-            <div class="profile-menu">
-                <div class="menu-item">
-                    <i class="fas fa-heart" style="color: #ff4757;"></i>
-                    <div class="menu-text">Daftar Suka</div>
-                    <span style="background: #eee; padding: 2px 8px; border-radius: 10px; font-size: 12px;">0</span>
+            <div style="margin-top: 30px; text-align: left;">
+                <div class="btn"
+                    style="width: 100%; justify-content: space-between; background: white; margin-bottom: 10px; box-shadow: var(--shadow-soft);">
+                    <span><i class="fas fa-cog" style="margin-right: 10px;"></i> Pengaturan</span>
+                    <i class="fas fa-chevron-right"></i>
                 </div>
-                <div class="menu-item">
-                    <i class="fas fa-bookmark" style="color: #2ecc71;"></i>
-                    <div class="menu-text">Daftar Simpan</div>
-                    <span style="background: #eee; padding: 2px 8px; border-radius: 10px; font-size: 12px;">0</span>
+                <div class="btn"
+                    style="width: 100%; justify-content: space-between; background: white; margin-bottom: 10px; box-shadow: var(--shadow-soft);">
+                    <span><i class="fas fa-comment-dots" style="margin-right: 10px;"></i> Hubungi Penjual</span>
+                    <i class="fas fa-chevron-right"></i>
                 </div>
-                <div class="menu-item">
-                    <i class="fas fa-wallet" style="color: #f1c40f;"></i>
-                    <div class="menu-text">Belum Dibayar</div>
-                </div>
-                <div class="menu-item">
-                    <i class="fas fa-box" style="color: var(--secondary-main);"></i>
-                    <div class="menu-text">Sedang Dikemas</div>
-                </div>
-                <div class="menu-item">
-                    <i class="fas fa-truck" style="color: var(--primary-main);"></i>
-                    <div class="menu-text">Dalam Pengiriman</div>
-                </div>
-                <div class="menu-item">
-                    <i class="fas fa-cog"></i>
-                    <div class="menu-text">Pengaturan Akun</div>
-                </div>
+                <a href="logout.php" class="btn"
+                    style="width: 100%; background: #fff5f5; color: #ff4757; margin-top: 20px;">Keluar Akun</a>
             </div>
-        </section>
-    </main>
+        </div>
+    </div>
 
-    <!-- Bottom Nav -->
+    <!-- Bottom Navigation -->
     <nav class="bottom-nav">
-        <a href="javascript:void(0)" class="nav-item active" onclick="showSection('beranda', this)">
+        <a href="javascript:void(0)" onclick="switchSection('beranda', this)" class="nav-item active">
             <i class="fas fa-home"></i>
             <span>Beranda</span>
         </a>
-        <a href="javascript:void(0)" class="nav-item" onclick="showSection('history', this)">
+        <a href="javascript:void(0)" onclick="switchSection('riwayat', this)" class="nav-item">
             <i class="fas fa-history"></i>
             <span>Riwayat</span>
         </a>
-        <a href="javascript:void(0)" class="nav-item" onclick="showSection('notification', this)">
-            <i class="fas fa-bell"></i>
-            <span>Notif</span>
+        <a href="javascript:void(0)" onclick="switchSection('notif', this)" class="nav-item">
+            <div style="position: relative;">
+                <i class="fas fa-bell"></i>
+                <span
+                    style="position: absolute; top: -5px; right: -5px; background: #ff4757; color: white; width: 14px; height: 14px; border-radius: 50%; font-size: 8px; display: flex; align-items: center; justify-content: center;">3</span>
+            </div>
+            <span>Notifikasi</span>
         </a>
-        <a href="javascript:void(0)" class="nav-item" onclick="showSection('profile', this)">
-            <i class="fas fa-user-circle"></i>
+        <a href="javascript:void(0)" onclick="switchSection('profil', this)" class="nav-item">
+            <i class="fas fa-user"></i>
             <span>Profil</span>
         </a>
     </nav>
 
     <script>
-        function showSection(sectionId, element) {
+        function switchSection(sectionId, element) {
             // Hide all sections
-            document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
-            // Deactivate all nav items
-            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.querySelectorAll('.dashboard-section').forEach(sec => sec.classList.remove('active'));
+            // Remove active from nav
+            document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
 
-            // Show selected section
+            // Show target
             document.getElementById(sectionId).classList.add('active');
-            // Activate selected nav item
             element.classList.add('active');
-
-            // Header dynamics
-            const header = document.querySelector('header');
-            if (sectionId === 'profile') {
-                header.style.background = 'white';
-            } else {
-                header.style.background = 'linear-gradient(to right, var(--primary-main), var(--secondary-main))';
-            }
         }
     </script>
 </body>
