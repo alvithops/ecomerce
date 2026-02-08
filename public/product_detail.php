@@ -392,8 +392,13 @@ $review_count = $rating_data['count'];
 
         function buyNow(isDirect = false) {
             const qty = document.getElementById('qtyVal').innerText;
-            // Add to cart and redirect to checkout
-            location.href = `cart_add.php?id=<?= $product_id ?>&qty=${qty}`;
+            if (isDirect) {
+                // Direct Buy: Go to a single-product focused checkout
+                location.href = `direct_order.php?id=<?= $product_id ?>&qty=${qty}`;
+            } else {
+                // Add to cart and redirect to multi-item selection
+                location.href = `cart_add.php?id=<?= $product_id ?>&qty=${qty}`;
+            }
         }
 
         function shareProduct() {
