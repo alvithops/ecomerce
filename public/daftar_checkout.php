@@ -16,6 +16,12 @@ if (empty($selected_items)) {
     exit();
 }
 
+// Fetch User Address for Auto-processing
+$stmt_u = $pdo->prepare("SELECT alamat FROM users WHERE id = ?");
+$stmt_u->execute([$user_id]);
+$user_data = $stmt_u->fetch();
+$user_addr = $user_data['alamat'] ?? 'Alamat tidak tersedia (Profile)';
+
 $total_price = 0;
 foreach ($selected_items as $si) {
     $total_price += ($si['price'] * $si['qty']);
@@ -31,7 +37,6 @@ foreach ($selected_items as $si) {
     <title>Daftar Checkout | PayBag</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="assets/css/style.css">
     <style>
         body {
@@ -63,39 +68,6 @@ foreach ($selected_items as $si) {
             object-fit: cover;
         }
 
-        .map-box {
-            width: 100%;
-            height: 280px;
-            border-radius: 15px;
-            margin-top: 15px;
-            border: 2px solid #eee;
-        }
-
-        .payment-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-top: 15px;
-        }
-
-        .pay-tile {
-            padding: 12px;
-            border: 2px solid #eee;
-            border-radius: 12px;
-            text-align: center;
-            cursor: pointer;
-            transition: 0.3s;
-            font-size: 13px;
-            color: #555;
-        }
-
-        .pay-tile.active {
-            border-color: var(--secondary-main);
-            background: #f0f7ff;
-            color: var(--secondary-main);
-            font-weight: 600;
-        }
-
         .sticky-footer {
             position: fixed;
             bottom: 0;
@@ -125,10 +97,10 @@ foreach ($selected_items as $si) {
     </header>
 
     <div class="animate-fade">
-        <!-- Section 1: Product List -->
+        <!-- Section: Order Summary List -->
         <div class="card-box animate-up">
-            <h3 style="margin-bottom: 20px;"><i class="fas fa-receipt" style="color: var(--primary-main);"></i> Daftar
-                Produk</h3>
+            <h3 style="margin-bottom: 20px;"><i class="fas fa-receipt" style="color: var(--primary-main);"></i>
+                Konfirmasi Pesanan</h3>
             <div id="itemList">
                 <?php foreach ($selected_items as $item): ?>
                     <div class="ordered-item">
@@ -143,118 +115,50 @@ foreach ($selected_items as $si) {
                     </div>
                 <?php endforeach; ?>
             </div>
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
-                <span style="font-weight: 600;">Total Barang</span>
-                <span style="font-weight: 700; color: #ff4757;">Rp
+
+            <div
+                style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px; padding-top: 15px; border-top: 2px dashed #eee;">
+                <span style="font-weight: 600;">Total Belanja</span>
+                <span style="font-weight: 700; color: #ff4757; font-size: 18px;">Rp
                     <?= number_format($total_price, 0, ',', '.') ?></span>
             </div>
         </div>
 
-        <!-- Section 2: Address & Maps -->
-        <div class="card-box animate-up">
-            <h3 style="margin-bottom: 15px;"><i class="fas fa-map-marker-alt" style="color: var(--secondary-main);"></i>
-                Alamat Pengiriman</h3>
-            <textarea id="addressInput" class="form-input" placeholder="Tandai lokasi Anda di peta..."
-                rows="2"></textarea>
-            <div id="map" class="map-box"></div>
-        </div>
-
-        <!-- Section 3: Payment Options -->
-        <div class="card-box animate-up">
-            <h3><i class="fas fa-wallet" style="color: #f1c40f;"></i> Metode Pembayaran</h3>
-            <div class="payment-grid">
-                <div class="pay-tile active" onclick="setPay('COD', this)">COD</div>
-                <div class="pay-tile" onclick="setPay('COD Cek Dulu', this)">COD Cek Dulu</div>
-                <div class="pay-tile" onclick="setPay('BCA', this)">BCA</div>
-                <div class="pay-tile" onclick="setPay('BRI', this)">BRI</div>
-                <div class="pay-tile" onclick="setPay('Mandiri', this)">Mandiri</div>
-                <div class="pay-tile" onclick="setPay('BNI', this)">BNI</div>
-                <div class="pay-tile" onclick="setPay('BTN', this)">BTN</div>
-                <div class="pay-tile" onclick="setPay('BSI', this)">BSI</div>
-                <div class="pay-tile" onclick="setPay('Dana', this)">Dana</div>
-                <div class="pay-tile" onclick="setPay('GoPay', this)">GoPay</div>
-                <div class="pay-tile" onclick="setPay('Shopee Pay', this)">Shopee Pay</div>
-            </div>
-
-            <div id="accNumberBox" style="display: none; margin-top: 15px;" class="animate-fade">
-                <div class="form-group">
-                    <label id="accLabel" style="font-size: 12px; margin-bottom: 5px; display: block;">No. Rekening /
-                        HP</label>
-                    <input type="text" id="accNumberInput" class="form-input" placeholder="Masukkan nomor anda...">
-                </div>
-            </div>
-            <input type="hidden" id="payMethodId" value="COD">
+        <div class="card-box animate-up" style="background: #f0f7ff; border: 1px solid #d0e7ff;">
+            <h4 style="font-size: 14px; margin-bottom: 8px;"><i class="fas fa-truck"
+                    style="color: var(--secondary-main);"></i> Pengiriman & Pembayaran</h4>
+            <p style="font-size: 12px; color: #555; line-height: 1.5;">
+                Pesanan Anda akan dikirim ke alamat yang terdaftar di profil Anda:<br>
+                <strong><?= htmlspecialchars($user_addr) ?></strong><br><br>
+                Metode Pembayaran: <strong>COD (Bayar di Tempat)</strong>
+            </p>
+            <p style="font-size: 11px; color: #777; margin-top: 10px; font-style: italic;">
+                *Untuk mengubah alamat atau metode pembayaran advanced, gunakan menu "Pesan Sekarang" di detail produk.
+            </p>
         </div>
     </div>
 
     <!-- Final Sticky Footer -->
     <div class="sticky-footer animate-up">
         <div class="total-info">
-            <div style="font-size: 11px; color: #777;">Ringkasan Total</div>
+            <div style="font-size: 11px; color: #777;">Tagihan Akhir</div>
             <h3>Rp <?= number_format($total_price, 0, ',', '.') ?></h3>
         </div>
+        <!-- Using original wording: CHECKOUT SELESAI -->
         <button class="btn btn-primary" style="padding: 15px 35px; border-radius: 12px; font-weight: 600;"
             onclick="submitFinal()">CHECKOUT SELESAI</button>
     </div>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // Init Map
-        const map = L.map('map', { scrollWheelZoom: false }).setView([-6.200000, 106.816666], 13);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
-
-        let marker;
-        map.on('click', function (e) {
-            if (marker) map.removeLayer(marker);
-            marker = L.marker(e.latlng).addTo(map);
-            fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${e.latlng.lat}&lon=${e.latlng.lng}`)
-                .then(res => res.json())
-                .then(data => {
-                    document.getElementById('addressInput').value = data.display_name;
-                })
-                .catch(() => {
-                    document.getElementById('addressInput').value = `Loc: ${e.latlng.lat.toFixed(6)}, ${e.latlng.lng.toFixed(6)}`;
-                });
-        });
-
-        function setPay(method, el) {
-            document.getElementById('payMethodId').value = method;
-            document.querySelectorAll('.pay-tile').forEach(t => t.classList.remove('active'));
-            el.classList.add('active');
-            const accBox = document.getElementById('accNumberBox');
-            if (method !== 'COD' && method !== 'COD Cek Dulu') {
-                accBox.style.display = 'block';
-                document.getElementById('accLabel').innerText = `No. Rekening / HP (${method})`;
-            } else {
-                accBox.style.display = 'none';
-            }
-        }
-
         function submitFinal() {
-            const addr = document.getElementById('addressInput').value.trim();
-            const pm = document.getElementById('payMethodId').value;
-            const accNum = document.getElementById('accNumberInput').value.trim();
-            const items = <?= json_encode($selected_items) ?>;
-
-            if (!addr) {
-                alert("Lengkapi Data Anda Terlebih Dahulu, Dan Pastikan Sudah Terisi Semua");
-                return;
-            }
-
-            if (pm !== 'COD' && pm !== 'COD Cek Dulu' && !accNum) {
-                alert("Masukkan Nomor Rekening / HP untuk pembayaran via " + pm);
-                return;
-            }
-
             const form = document.createElement('form');
             form.method = 'POST';
             form.action = 'order_process.php';
 
             const fields = {
-                address: addr,
-                payment_method: pm,
-                acc_number: accNum,
-                items: JSON.stringify(items)
+                address: <?= json_encode($user_addr) ?>,
+                payment_method: 'COD',
+                items: JSON.stringify(<?= json_encode($selected_items) ?>)
             };
 
             for (const key in fields) {
@@ -268,9 +172,6 @@ foreach ($selected_items as $si) {
             document.body.appendChild(form);
             form.submit();
         }
-
-        map.on('focus', () => { map.scrollWheelZoom.enable(); });
-        map.on('blur', () => { map.scrollWheelZoom.disable(); });
     </script>
 </body>
 

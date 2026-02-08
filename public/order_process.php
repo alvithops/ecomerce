@@ -56,8 +56,8 @@ try {
 
     $pdo->commit();
 
-    // Redirect to Histories section on Dashboard
-    header("Location: dashboard.php#riwayat"); // Note: JavaScript in dashboard.php should handle hash to switch section
+    // Redirect to Beranda section on Dashboard as requested
+    header("Location: dashboard.php#beranda");
     exit();
 
 } catch (PDOException $e) {
