@@ -135,14 +135,16 @@ if ($product_id > 0) {
     <div class="chat-footer">
         <button class="btn glass" style="width: 50px; height: 50px; border-radius: 50%; padding: 0;"><i
                 class="fas fa-plus"></i></button>
-        <input type="text" placeholder="Ketik pesan Anda..." class="form-input" style="flex: 1;">
-        <button class="btn btn-primary" style="width: 50px; height: 50px; border-radius: 50%; padding: 0;"><i
+        <input type="text" id="chatInput" placeholder="Ketik pesan Anda..." class="form-input" style="flex: 1;">
+        <button id="sendMessageBtn" class="btn btn-primary"
+            style="width: 50px; height: 50px; border-radius: 50%; padding: 0;"><i
                 class="fas fa-paper-plane"></i></button>
     </div>
 
     <script>
         const container = document.querySelector('.chat-container');
-        const input = document.querySelector('.form-input');
+        const input = document.getElementById('chatInput');
+        const sendBtn = document.getElementById('sendMessageBtn');
         const productId = <?= $product_id ?>;
 
         function fetchMessages() {
@@ -180,6 +182,10 @@ if ($product_id > 0) {
             const text = input.value.trim();
             if (!text) return;
 
+            // Disable button during sending
+            sendBtn.disabled = true;
+            sendBtn.style.opacity = '0.5';
+
             const fd = new FormData();
             fd.append('product_id', productId);
             fd.append('message', text);
@@ -187,10 +193,19 @@ if ($product_id > 0) {
             fetch('send_chat.php', { method: 'POST', body: fd })
                 .then(r => r.json())
                 .then(data => {
+                    sendBtn.disabled = false;
+                    sendBtn.style.opacity = '1';
                     if (data.success) {
                         input.value = '';
                         fetchMessages();
+                    } else {
+                        alert('Gagal mengirim pesan: ' + data.message);
                     }
+                })
+                .catch(err => {
+                    sendBtn.disabled = false;
+                    sendBtn.style.opacity = '1';
+                    console.error('Error:', err);
                 });
         }
 
@@ -201,10 +216,19 @@ if ($product_id > 0) {
         setInterval(fetchMessages, 3000);
 
         // Send on click and enter
-        document.querySelector('.btn-primary').addEventListener('click', sendMessage);
+        sendBtn.addEventListener('click', function () {
+            sendBtn.style.transform = 'scale(0.9)';
+            setTimeout(() => sendBtn.style.transform = 'scale(1)', 100);
+            sendMessage();
+        });
+
         input.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') sendMessage();
         });
+
+        // Ensure button appearance
+        sendBtn.style.cursor = 'pointer';
+        sendBtn.style.zIndex = '100';
     </script>
 </body>
 
