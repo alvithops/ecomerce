@@ -133,7 +133,10 @@ foreach ($selected_items as $si) {
                 Metode Pembayaran: <strong>COD (Bayar di Tempat)</strong>
             </p>
             <p style="font-size: 11px; color: #777; margin-top: 10px; font-style: italic;">
-                *Untuk mengubah alamat atau metode pembayaran advanced, gunakan menu "Pesan Sekarang" di detail produk.
+                *Ingin mengubah alamat atau metode pembayaran?
+                <a href="javascript:void(0)" onclick="goAdvanced()"
+                    style="color: var(--secondary-main); font-weight: 600; text-decoration: underline;">Gunakan Opsi
+                    Pengiriman Lanjut</a>
             </p>
         </div>
     </div>
@@ -150,6 +153,21 @@ foreach ($selected_items as $si) {
     </div>
 
     <script>
+        function goAdvanced() {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = 'checkout_shipping.php';
+
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'items';
+            input.value = JSON.stringify(<?= json_encode($selected_items) ?>);
+            form.appendChild(input);
+
+            document.body.appendChild(form);
+            form.submit();
+        }
+
         function submitFinal() {
             const form = document.createElement('form');
             form.method = 'POST';
