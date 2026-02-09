@@ -18,10 +18,10 @@ try {
     if ($action === 'get_conversations' && $isAdmin) {
         // Get list of conversations for admin (latest message from each user per product)
         $stmt = $pdo->prepare("
-            SELECT c.*, u.nama_pengguna as user_name, p.name as product_name 
+            SELECT c.*, COALESCE(u.nama_pengguna, 'Unknown User') as user_name, COALESCE(p.name, 'Unknown Product') as product_name 
             FROM chats c
-            JOIN users u ON c.user_id = u.id
-            JOIN products p ON c.product_id = p.id
+            LEFT JOIN users u ON c.user_id = u.id
+            LEFT JOIN products p ON c.product_id = p.id
             WHERE c.id IN (
                 SELECT MAX(id) FROM chats GROUP BY user_id, product_id
             )
@@ -35,7 +35,7 @@ try {
         $targetUserId = $isAdmin ? ($_GET['user_id'] ?? null) : $userId;
         $productId = $_GET['product_id'] ?? null;
 
-        if (!$targetUserId || !$productId) {
+        if ($targetUserId === null || $productId === null) {
             echo json_encode(['success' => false, 'message' => 'Missing parameters']);
             exit();
         }
