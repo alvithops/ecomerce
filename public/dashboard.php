@@ -275,7 +275,7 @@ $shipping_list = $stmt_shipping->fetchAll();
         <div class="cart-icon" style="position: relative; cursor: pointer;" onclick="location.href='checkout.php'">
             <i class="fas fa-shopping-cart" style="font-size: 20px; color: #555;"></i>
             <span
-                style="position: absolute; top: -10px; right: -10px; background: #ff4757; color: white; width: 18px; height: 18px; border-radius: 50%; font-size: 10px; display: flex; align-items: center; justify-content: center;">2</span>
+                style="position: absolute; top: -10px; right: -10px; background: #ff4757; color: white; width: 18px; height: 18px; border-radius: 50%; font-size: 10px; display: flex; align-items: center; justify-content: center;"><?= count($_SESSION['cart'] ?? []) ?></span>
         </div>
     </header>
 
@@ -469,7 +469,7 @@ $shipping_list = $stmt_shipping->fetchAll();
             <div style="position: relative;">
                 <i class="fas fa-bell"></i>
                 <span
-                    style="position: absolute; top: -5px; right: -5px; background: #ff4757; color: white; width: 14px; height: 14px; border-radius: 50%; font-size: 8px; display: flex; align-items: center; justify-content: center;">3</span>
+                    style="position: absolute; top: -5px; right: -5px; background: #ff4757; color: white; width: 14px; height: 14px; border-radius: 50%; font-size: 8px; display: flex; align-items: center; justify-content: center;"><?= count($notifications) ?></span>
             </div>
             <span>Notifikasi</span>
         </a>
