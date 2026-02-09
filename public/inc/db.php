@@ -19,6 +19,20 @@ $options = [
 
 try {
     $pdo = new PDO($dsn, $user, $pass, $options);
+
+    // Auto-create chats table if missing (ensuring feature works)
+    $pdo->exec("CREATE TABLE IF NOT EXISTS chats (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        product_id INT NOT NULL,
+        message TEXT NOT NULL,
+        is_admin BOOLEAN DEFAULT FALSE,
+        is_read BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX (user_id),
+        INDEX (product_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+
 } catch (\PDOException $e) {
     if ($e->getCode() == 1049) {
         die("Database 'luxury_shope' belum dibuat. Silakan buat database 'luxury_shope' dulu di phpMyAdmin atau jalankan query: CREATE DATABASE luxury_shope;");

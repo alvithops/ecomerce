@@ -18,10 +18,10 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 $productId = $_POST['product_id'] ?? null;
-$message = $_POST['message'] ?? '';
+$message = trim($_POST['message'] ?? '');
 $targetUserId = $isAdmin ? ($_POST['user_id'] ?? null) : $userId;
 
-if (!$productId || !$message || !$targetUserId) {
+if ($productId === null || $message === '' || $targetUserId === null) {
     echo json_encode(['success' => false, 'message' => 'Missing required fields']);
     exit();
 }

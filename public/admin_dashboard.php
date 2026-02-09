@@ -10,7 +10,10 @@ if (!isset($_SESSION['admin_logged_in'])) {
 // Fetch Admin Stats
 $total_revenue = 158500000; // Simulated
 $total_orders = 842;        // Simulated
-$new_chats = 5;             // Simulated
+
+// Real Chat Count (Unread from users)
+$stmt = $pdo->query("SELECT COUNT(DISTINCT user_id, product_id) as unread_count FROM chats WHERE is_read = 0 AND is_admin = 0");
+$new_chats = $stmt->fetch()['unread_count'];
 
 ?>
 
@@ -291,39 +294,38 @@ $new_chats = 5;             // Simulated
             } else if (type === 'sales') {
                 content.innerHTML = `
                     <h2 style="margin-bottom: 30px;"><i class="fas fa-chart-line"></i> Info Penjualan & Record</h2>
-                    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 30px;">
+                    <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 30px;">
                         <div>
                             <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
-                                <h4>Grafik Penjualan</h4>
-                                <select onchange="updateChart(this.value)" style="border:1px solid #ddd; padding:5px; border-radius:5px;">
+                                <h4>Grafik Keuntungan (Rp)</h4>
+                                <select id="chartPeriod" onchange="updateSalesChart(this.value)" style="border:1px solid #ddd; padding:5px; border-radius:5px;">
                                     <option value="weekly">Mingguan</option>
                                     <option value="monthly">Bulanan</option>
                                     <option value="yearly">Tahunan</option>
                                 </select>
                             </div>
-                            <canvas id="salesChart" style="width: 100%; height: 250px;"></canvas>
+                            <div style="height: 220px; position: relative; margin-bottom: 30px;">
+                                <canvas id="salesChart"></canvas>
+                            </div>
+
+                            <h4>Paling Banyak Terjual (Unit)</h4>
+                            <div style="height: 200px; position: relative;">
+                                <canvas id="productChart"></canvas>
+                            </div>
                         </div>
-                        <div style="background:#f9f9f9; padding:20px; border-radius:20px;">
-                            <h4>Record Penjualan</h4>
-                            <div style="margin-top: 15px; font-size: 12px;">
-                                <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #eee;">
-                                    <span>ORD #881 - Andi P.</span>
-                                    <strong style="color:#2ecc71">Rp 12jt</strong>
-                                </div>
-                                <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #eee;">
-                                    <span>ORD #880 - Budi S.</span>
-                                    <strong style="color:#2ecc71">Rp 4.5jt</strong>
-                                </div>
+                        <div style="background:#f9f9f9; padding:20px; border-radius:20px; max-height: 550px; overflow-y: auto;">
+                            <h4>Record Penjualan Terbaru</h4>
+                            <div id="salesRecordsList" style="margin-top: 15px; font-size: 12px;">
+                                <div style="text-align:center; padding:20px; color:#999;">Memuat records...</div>
                             </div>
                             <h4 style="margin-top: 25px;">Pesan Terbaru Pemesan</h4>
-                            <div style="margin-top: 10px; font-size: 11px; color: #666;">
-                                <div style="padding: 8px; background: white; border-radius: 8px; margin-bottom: 5px;">"Stok jam tangan emas yang #22 masih ada?" - <strong>Lia</strong></div>
-                                <div style="padding: 8px; background: white; border-radius: 8px;">"Makasih min barang sudah dipajang!" - <strong>Rian</strong></div>
+                            <div id="latestBuyerMessages" style="margin-top: 10px; font-size: 11px; color: #666;">
+                                <div style="text-align:center; padding:20px; color:#999;">Memuat pesan...</div>
                             </div>
                         </div>
                     </div>
                 `;
-                initSalesChart();
+                fetchSalesInfo();
             } else if (type === 'chat') {
                 content.innerHTML = `
                     <h2 style="margin-bottom: 30px;"><i class="fas fa-comments"></i> Pusat Chat Pelanggan (Berdasarkan Produk)</h2>
@@ -347,6 +349,8 @@ $new_chats = 5;             // Simulated
                     </div>
                 `;
                 fetchAdminConversations();
+                if (convInterval) clearInterval(convInterval);
+                convInterval = setInterval(fetchAdminConversations, 5000);
             }
             else if (type === 'product') {
                 content.innerHTML = `<h2 style="margin-bottom: 30px;"><i class="fas fa-boxes"></i> Setting Stok Produk (Live)</h2>
@@ -409,6 +413,43 @@ $new_chats = 5;             // Simulated
         }
 
         // Feature functions for Admin
+        let salesData = null;
+        function fetchSalesInfo() {
+            fetch('get_sales_info.php?action=all')
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        salesData = data.stats;
+
+                        // Populate Records
+                        const recordList = document.getElementById('salesRecordsList');
+                        recordList.innerHTML = '';
+                        data.records.forEach(r => {
+                            recordList.innerHTML += `
+                                <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #eee;">
+                                    <span>ORD #${r.id} - ${r.nama_pengguna || 'Guest'}</span>
+                                    <strong style="color:#2ecc71">Rp ${parseInt(r.total_price).toLocaleString('id-ID')}</strong>
+                                </div>
+                            `;
+                        });
+
+                        // Populate Messages
+                        const msgList = document.getElementById('latestBuyerMessages');
+                        msgList.innerHTML = '';
+                        data.messages.forEach(m => {
+                            msgList.innerHTML += `
+                                <div style="padding: 8px; background: white; border-radius: 8px; margin-bottom: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.02);">
+                                    "${m.message}" - <strong>${m.nama_pengguna}</strong>
+                                </div>
+                            `;
+                        });
+
+                        initSalesChart(data.stats.weekly);
+                        initProductChart(data.stats.best_selling);
+                    }
+                });
+        }
+
         function fetchAdminProducts() {
             fetch('get_products_json.php')
                 .then(r => r.json())
@@ -416,18 +457,22 @@ $new_chats = 5;             // Simulated
                     const list = document.getElementById('adminPList');
                     list.innerHTML = '';
                     data.forEach(p => {
-                        const statusClass = p.stock > 0 ? 'status-shipping' : 'status-unpaid';
-                        const statusText = p.stock > 0 ? 'Tersedia' : 'Habis';
+                        const isOut = p.stock <= 0;
+                        const statusClass = !isOut ? 'status-completed' : 'status-unpaid';
+                        const statusText = !isOut ? 'Tersedia' : 'Stok Habis';
                         list.innerHTML += `
                         <tr style="border-bottom: 1px solid #eee;" class="p-row" data-name="${p.name.toLowerCase()}">
                             <td style="padding: 12px;">#${p.id}</td>
-                            <td style="padding: 12px;">${p.name}</td>
+                            <td style="padding: 12px;">
+                                ${p.name}
+                                <span class="status-pill ${statusClass}" style="margin-left:8px; font-size:9px;">${statusText}</span>
+                            </td>
                             <td style="padding: 12px;">
                                 <input type="number" id="s-${p.id}" value="${p.stock}" style="width: 60px;" class="form-input">
                             </td>
                             <td style="padding: 12px; display:flex; gap:5px;">
-                                <button onclick="updateStock(${p.id}, 'update')" class="btn" style="background:var(--secondary-main); color:white; font-size:10px;">Simpan</button>
-                                <button onclick="updateStock(${p.id}, 'out')" class="btn" style="background: #ff4757; color: white; font-size: 10px;">Mark Habis</button>
+                                <button onclick="updateStock(${p.id}, 'update')" class="btn" style="background:var(--secondary-main); color:white; font-size:10px; padding:8px 12px;">Simpan</button>
+                                <button onclick="updateStock(${p.id}, 'out')" class="btn" style="background: #ff4757; color: white; font-size: 10px; padding:8px 12px;">Mark Habis</button>
                             </td>
                         </tr>
                     `;
@@ -463,6 +508,7 @@ $new_chats = 5;             // Simulated
         let activeChatUser = null;
         let activeChatProduct = null;
         let chatInterval = null;
+        let convInterval = null;
 
         function fetchAdminConversations() {
             fetch('get_chats.php?action=get_conversations')
@@ -497,11 +543,11 @@ $new_chats = 5;             // Simulated
             document.getElementById('activeUserName').innerText = userName;
             document.getElementById('activeProductName').innerText = productName;
             document.getElementById('adminChatInputArea').style.display = 'flex';
-            
+
             fetchAdminMessages();
             if (chatInterval) clearInterval(chatInterval);
             chatInterval = setInterval(fetchAdminMessages, 3000);
-            
+
             // Highlight active in list
             fetchAdminConversations();
         }
@@ -558,43 +604,85 @@ $new_chats = 5;             // Simulated
                 clearInterval(chatInterval);
                 chatInterval = null;
             }
+            if (convInterval) {
+                clearInterval(convInterval);
+                convInterval = null;
+            }
         }
 
         let chart;
-        function initSalesChart() {
+        let pChart;
+        function initSalesChart(initialData) {
             const ctx = document.getElementById('salesChart').getContext('2d');
+            if (chart) chart.destroy();
+
+            const labels = initialData.map(d => d.date || d.label);
+            const totals = initialData.map(d => d.total);
+
             chart = new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'],
+                    labels: labels,
                     datasets: [{
-                        label: 'Keuntungan (Juta)',
-                        data: [12, 19, 15, 25, 32, 45, 38],
-                        borderColor: '#90EE90',
-                        backgroundColor: 'rgba(144, 238, 144, 0.2)',
-                        fill: true, tension: 0.4
+                        label: 'Keuntungan (Rp)',
+                        data: totals,
+                        borderColor: '#2ecc71',
+                        backgroundColor: 'rgba(46, 204, 113, 0.1)',
+                        fill: true, tension: 0.4,
+                        borderWidth: 3,
+                        pointBackgroundColor: '#fff',
+                        pointBorderColor: '#2ecc71',
+                        pointRadius: 4
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, grid: { display: false } },
+                        x: { grid: { display: false } }
+                    },
                     plugins: { legend: { display: false } }
                 }
             });
         }
 
-        function updateChart(period) {
-            if (!chart) return;
-            if (period === 'monthly') {
-                chart.data.labels = ['Minggu 1', 'Minggu 2', 'Minggu 3', 'Minggu 4'];
-                chart.data.datasets[0].data = [80, 120, 95, 150];
-            } else if (period === 'yearly') {
-                chart.data.labels = ['Jan-Mar', 'Apr-Jun', 'Jul-Sep', 'Okt-Des'];
-                chart.data.datasets[0].data = [450, 720, 680, 950];
-            } else {
-                chart.data.labels = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
-                chart.data.datasets[0].data = [12, 19, 15, 25, 32, 45, 38];
-            }
+        function initProductChart(productData) {
+            const ctx = document.getElementById('productChart').getContext('2d');
+            if (pChart) pChart.destroy();
+
+            const labels = productData.map(d => d.name);
+            const totals = productData.map(d => d.total_sold);
+
+            pChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Unit Terjual',
+                        data: totals,
+                        backgroundColor: '#ADD8E6',
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { beginAtZero: true, grid: { display: false } },
+                        y: { grid: { display: false } }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        function updateSalesChart(period) {
+            if (!chart || !salesData) return;
+            const data = salesData[period];
+            chart.data.labels = data.map(d => d.date || d.label);
+            chart.data.datasets[0].data = data.map(d => d.total);
             chart.update();
         }
     </script>
