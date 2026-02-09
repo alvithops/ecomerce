@@ -20,7 +20,7 @@ $new_chats = 5;             // Simulated
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Master Admin | Luxury Shope</title>
+    <title>Alvitho Admin | PayBag</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="assets/css/style.css">
@@ -175,7 +175,7 @@ $new_chats = 5;             // Simulated
     <aside class="admin-sidebar">
         <div
             style="font-size: 24px; font-weight: 700; color: var(--secondary-main); margin-bottom: 45px; display: flex; align-items: center; gap: 12px;">
-            <i class="fas fa-gem"></i> Luxury Admin
+            <i class="fas fa-gem"></i> PayBag Admin
         </div>
 
         <button class="side-btn active" onclick="location.reload()"><i class="fas fa-columns"></i> Dashboard
@@ -196,7 +196,7 @@ $new_chats = 5;             // Simulated
         <div class="dashboard-header">
             <div>
                 <h1 style="font-size: 28px;">Selamat Datang, Admin</h1>
-                <p style="color: #777;">Monitor performa bisnis Luxury Shope Anda hari ini.</p>
+                <p style="color: #777;">Monitor performa bisnis PayBag Anda hari ini.</p>
             </div>
             <div style="display: flex; gap: 10px;">
                 <button class="btn glass" onclick="location.reload()"><i class="fas fa-sync-alt"></i></button>
@@ -327,34 +327,28 @@ $new_chats = 5;             // Simulated
             } else if (type === 'chat') {
                 content.innerHTML = `
                     <h2 style="margin-bottom: 30px;"><i class="fas fa-comments"></i> Pusat Chat Pelanggan (Berdasarkan Produk)</h2>
-                    <div style="display: grid; grid-template-columns: 250px 1fr; border: 1px solid #eee; border-radius: 15px; overflow: hidden; height: 400px;">
-                        <div style="background: #f8f8f8; border-right: 1px solid #eee; overflow-y: auto;">
+                    <div style="display: grid; grid-template-columns: 280px 1fr; border: 1px solid #eee; border-radius: 15px; overflow: hidden; height: 500px; background: white;">
+                        <div style="background: #f8f8f8; border-right: 1px solid #eee; overflow-y: auto;" id="adminChatList">
                             <div style="padding: 15px; background: white; border-bottom: 1px solid #eee;"><strong>Pesan Masuk</strong></div>
-                            <div style="padding: 15px; border-bottom: 1px solid #eee; background: var(--secondary-light); cursor: pointer;">
-                                <div style="font-weight: 600; font-size: 13px;">Andi Pratama</div>
-                                <div style="font-size: 11px; color: var(--primary-main);">Produk: Exclusive Bag #12</div>
-                                <div style="font-size: 11px; color: #777; overflow: hidden; white-space: nowrap;">Halo, apakah barang ready?</div>
-                            </div>
-                            <div style="padding: 15px; border-bottom: 1px solid #eee; cursor: pointer;">
-                                <div style="font-weight: 600; font-size: 13px;">Budi Santoso</div>
-                                <div style="font-size: 11px; color: var(--primary-main);">Produk: Luxury Watch #45</div>
-                                <div style="font-size: 11px; color: #777; overflow: hidden; white-space: nowrap;">Terima kasih barang sudah sampai...</div>
-                            </div>
+                            <div style="padding: 30px; text-align: center; color: #999;">Memuat percakapan...</div>
                         </div>
                         <div style="display: flex; flex-direction: column;">
-                            <div style="flex: 1; padding: 20px; background: white; overflow-y: auto;">
-                                <div style="font-size: 12px; color: #999; text-align: center; margin-bottom: 15px;">Menampilkan Chat untuk: Andi Pratama (Exclusive Bag #12)</div>
-                                <div style="display: inline-block; background: #f0f0f0; padding: 10px; border-radius: 10px; margin-bottom: 10px;">Halo, apakah barang ready?</div>
-                                <div style="text-align: right;"><div style="display: inline-block; background: var(--secondary-main); color: white; padding: 10px; border-radius: 10px;">Tentu, barang premium kami selalu ready!</div></div>
+                            <div id="activeChatHeader" style="padding: 15px; background: #fff; border-bottom: 1px solid #eee; font-weight: 600; font-size: 14px; display: none;">
+                                <span id="activeUserName"></span> - <span id="activeProductName" style="color: var(--primary-main);"></span>
                             </div>
-                            <div style="padding: 15px; border-top: 1px solid #eee; display: flex; gap: 10px;">
-                                <input type="text" placeholder="Balas pesan..." class="form-input">
-                                <button class="btn btn-primary"><i class="fas fa-paper-plane"></i></button>
+                            <div id="adminChatMessages" style="flex: 1; padding: 20px; background: #fafafa; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;">
+                                <div style="margin: auto; color: #bbb; text-align: center;">Pilih percakapan dari kiri untuk mulai membalas.</div>
+                            </div>
+                            <div id="adminChatInputArea" style="padding: 15px; border-top: 1px solid #eee; display: none; gap: 10px;">
+                                <input type="text" id="adminReplyInput" placeholder="Balas pesan..." class="form-input" style="flex: 1;">
+                                <button class="btn btn-primary" onclick="adminSendReply()"><i class="fas fa-paper-plane"></i></button>
                             </div>
                         </div>
                     </div>
                 `;
-            } else if (type === 'product') {
+                fetchAdminConversations();
+            }
+            else if (type === 'product') {
                 content.innerHTML = `<h2 style="margin-bottom: 30px;"><i class="fas fa-boxes"></i> Setting Stok Produk (Live)</h2>
                     <div style="margin-bottom: 20px;">
                         <input type="text" id="pSearch" placeholder="Cari nama produk..." class="form-input" style="width: 300px;" onkeyup="filterAdminProducts()">
@@ -466,9 +460,104 @@ $new_chats = 5;             // Simulated
         }
         }
 
+        let activeChatUser = null;
+        let activeChatProduct = null;
+        let chatInterval = null;
+
+        function fetchAdminConversations() {
+            fetch('get_chats.php?action=get_conversations')
+                .then(r => r.json())
+                .then(data => {
+                    const list = document.getElementById('adminChatList');
+                    if (!list) return;
+                    list.innerHTML = '<div style="padding: 15px; background: white; border-bottom: 1px solid #eee;"><strong>Pesan Masuk</strong></div>';
+                    if (data.success && data.conversations.length > 0) {
+                        data.conversations.forEach(c => {
+                            const unread = c.is_read == 0 && c.is_admin == 0 ? '<span style="background:var(--primary-main); color:white; border-radius:50%; padding:2px 6px; font-size:10px; margin-left:5px;">!</span>' : '';
+                            const activeClass = (activeChatUser == c.user_id && activeChatProduct == c.product_id) ? 'style="background: var(--secondary-light);"' : '';
+                            list.innerHTML += `
+                                <div onclick="openAdminChat(${c.user_id}, ${c.product_id}, '${c.user_name}', '${c.product_name}')" 
+                                     style="padding: 15px; border-bottom: 1px solid #eee; cursor: pointer;" ${activeClass}>
+                                    <div style="font-weight: 600; font-size: 13px;">${c.user_name} ${unread}</div>
+                                    <div style="font-size: 11px; color: var(--primary-main);">Produk: ${c.product_name}</div>
+                                    <div style="font-size: 11px; color: #777; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">${c.message}</div>
+                                </div>
+                            `;
+                        });
+                    } else {
+                        list.innerHTML += '<div style="padding: 30px; text-align: center; color: #999;">Belum ada percakapan.</div>';
+                    }
+                });
+        }
+
+        function openAdminChat(userId, productId, userName, productName) {
+            activeChatUser = userId;
+            activeChatProduct = productId;
+            document.getElementById('activeChatHeader').style.display = 'block';
+            document.getElementById('activeUserName').innerText = userName;
+            document.getElementById('activeProductName').innerText = productName;
+            document.getElementById('adminChatInputArea').style.display = 'flex';
+            
+            fetchAdminMessages();
+            if (chatInterval) clearInterval(chatInterval);
+            chatInterval = setInterval(fetchAdminMessages, 3000);
+            
+            // Highlight active in list
+            fetchAdminConversations();
+        }
+
+        function fetchAdminMessages() {
+            if (!activeChatUser || !activeChatProduct) return;
+            fetch(`get_chats.php?user_id=${activeChatUser}&product_id=${activeChatProduct}`)
+                .then(r => r.json())
+                .then(data => {
+                    const box = document.getElementById('adminChatMessages');
+                    if (!box) return;
+                    if (data.success) {
+                        box.innerHTML = '';
+                        data.messages.forEach(m => {
+                            const isMe = m.is_admin == 1;
+                            const align = isMe ? 'flex-end' : 'flex-start';
+                            const bg = isMe ? 'var(--secondary-main)' : '#eee';
+                            const color = isMe ? 'white' : '#333';
+                            box.innerHTML += `
+                                <div style="align-self: ${align}; background: ${bg}; color: ${color}; padding: 10px 15px; border-radius: 12px; max-width: 80%; font-size: 13px;">
+                                    ${m.message}
+                                </div>
+                            `;
+                        });
+                        box.scrollTop = box.scrollHeight;
+                    }
+                });
+        }
+
+        function adminSendReply() {
+            const input = document.getElementById('adminReplyInput');
+            const msg = input.value.trim();
+            if (!msg || !activeChatUser || !activeChatProduct) return;
+
+            const fd = new FormData();
+            fd.append('user_id', activeChatUser);
+            fd.append('product_id', activeChatProduct);
+            fd.append('message', msg);
+
+            fetch('send_chat.php', { method: 'POST', body: fd })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        input.value = '';
+                        fetchAdminMessages();
+                    }
+                });
+        }
+
         function closeModule() {
             document.getElementById('moduleOverlay').style.display = 'none';
             document.getElementById('adminMain').classList.remove('blur-bg');
+            if (chatInterval) {
+                clearInterval(chatInterval);
+                chatInterval = null;
+            }
         }
 
         let chart;

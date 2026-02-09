@@ -143,37 +143,68 @@ if ($product_id > 0) {
     <script>
         const container = document.querySelector('.chat-container');
         const input = document.querySelector('.form-input');
+        const productId = <?= $product_id ?>;
+
+        function fetchMessages() {
+            fetch(`get_chats.php?product_id=${productId}`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        const currentScroll = container.scrollTop;
+                        const atBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 100;
+
+                        container.innerHTML = `
+                            <div class="msg msg-in">
+                                Halo! Ada yang bisa kami bantu mengenai produk <strong><?= htmlspecialchars($product_name) ?></strong>?
+                            </div>
+                        `;
+
+                        data.messages.forEach(m => {
+                            const isMe = m.is_admin == 0;
+                            const msgDiv = document.createElement('div');
+                            msgDiv.className = isMe ? 'msg msg-out' : 'msg msg-in';
+                            msgDiv.innerText = m.message;
+                            container.appendChild(msgDiv);
+                        });
+
+                        if (atBottom) {
+                            container.scrollTop = container.scrollHeight;
+                        } else {
+                            container.scrollTop = currentScroll;
+                        }
+                    }
+                });
+        }
 
         function sendMessage() {
             const text = input.value.trim();
             if (!text) return;
 
-            const msgDiv = document.createElement('div');
-            msgDiv.className = 'msg msg-out';
-            msgDiv.innerText = text;
-            container.appendChild(msgDiv);
+            const fd = new FormData();
+            fd.append('product_id', productId);
+            fd.append('message', text);
 
-            input.value = '';
-            container.scrollTop = container.scrollHeight;
-
-            // Simulated Admin Reply
-            setTimeout(() => {
-                const replyDiv = document.createElement('div');
-                replyDiv.className = 'msg msg-in';
-                replyDiv.innerText = "Baik, pesan Anda telah kami terima. Admin akan segera merespons pertanyaan Anda mengenai produk tersebut.";
-                container.appendChild(replyDiv);
-                container.scrollTop = container.scrollHeight;
-            }, 1000);
+            fetch('send_chat.php', { method: 'POST', body: fd })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        input.value = '';
+                        fetchMessages();
+                    }
+                });
         }
+
+        // Initial fetch
+        fetchMessages();
+
+        // Polling for updates
+        setInterval(fetchMessages, 3000);
 
         // Send on click and enter
         document.querySelector('.btn-primary').addEventListener('click', sendMessage);
         input.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') sendMessage();
         });
-
-        // Scroll to bottom on load
-        container.scrollTop = container.scrollHeight;
     </script>
 </body>
 
